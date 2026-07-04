@@ -12,9 +12,12 @@ document.documentElement.classList.toggle('light', savedAppearance !== 'dark');
 
 createInertiaApp({
     resolve: (name) => {
-        const pages = import.meta.glob('./Pages/**/*.vue', { eager: true });
+        const pages = {
+            ...import.meta.glob('./Pages/**/*.vue', { eager: true }),
+            ...import.meta.glob('./pages/**/*.vue', { eager: true }),
+        };
 
-        return pages[`./Pages/${name}.vue`];
+        return pages[`./Pages/${name}.vue`] || pages[`./pages/${name}.vue`];
     },
     setup({ el, App, props, plugin }) {
         const vueApp = createApp({
