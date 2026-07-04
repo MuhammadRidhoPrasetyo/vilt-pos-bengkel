@@ -1,52 +1,13 @@
 <script setup>
-import { router, usePage } from '@inertiajs/vue3';
+import DashboardLayout from '../Layouts/DashboardLayout.vue';
 import { CalendarDate, DateFormatter, getLocalTimeZone, today } from '@internationalized/date';
-import { useAppConfig } from '#imports';
 import { computed, h, ref, resolveComponent, watch } from 'vue';
 
-const page = usePage();
-const appConfig = useAppConfig();
-const open = ref(false);
-const notificationsOpen = ref(false);
+defineOptions({
+    layout: [DashboardLayout, { title: 'Home', panelId: 'home' }],
+});
+
 const period = ref('daily');
-const primaryColor = ref('green');
-const neutralColor = ref('zinc');
-const appearance = ref('light');
-
-const applyTheme = () => {
-    appConfig.ui.colors.primary = primaryColor.value;
-    appConfig.ui.colors.neutral = neutralColor.value;
-
-    document.documentElement.classList.toggle('dark', appearance.value === 'dark');
-    document.documentElement.classList.toggle('light', appearance.value !== 'dark');
-
-    localStorage.setItem('nuxt-ui-primary', primaryColor.value);
-    localStorage.setItem('nuxt-ui-neutral', neutralColor.value);
-    localStorage.setItem('nuxt-ui-appearance', appearance.value);
-};
-
-if (typeof localStorage !== 'undefined') {
-    primaryColor.value = localStorage.getItem('nuxt-ui-primary') || 'green';
-    neutralColor.value = localStorage.getItem('nuxt-ui-neutral') || 'zinc';
-    appearance.value = localStorage.getItem('nuxt-ui-appearance') || 'light';
-
-    applyTheme();
-}
-
-const setPrimaryColor = (color) => {
-    primaryColor.value = color;
-    applyTheme();
-};
-
-const setNeutralColor = (color) => {
-    neutralColor.value = color;
-    applyTheme();
-};
-
-const setAppearance = (value) => {
-    appearance.value = value;
-    applyTheme();
-};
 
 const df = new DateFormatter('en-US', {
     dateStyle: 'medium',
@@ -56,330 +17,6 @@ const selectedRange = ref({
     start: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
     end: new Date(),
 });
-
-const teams = ref([
-    {
-        label: 'Nuxt',
-        avatar: {
-            src: 'https://github.com/nuxt.png',
-            alt: 'Nuxt',
-        },
-    },
-    {
-        label: 'NuxtHub',
-        avatar: {
-            src: 'https://github.com/nuxt-hub.png',
-            alt: 'NuxtHub',
-        },
-    },
-    {
-        label: 'NuxtLabs',
-        avatar: {
-            src: 'https://github.com/nuxtlabs.png',
-            alt: 'NuxtLabs',
-        },
-    },
-]);
-
-const selectedTeam = ref(teams.value[0]);
-
-const teamItems = computed(() => [
-    teams.value.map((team) => ({
-        ...team,
-        onSelect() {
-            selectedTeam.value = team;
-        },
-    })),
-    [
-        {
-            label: 'Create team',
-            icon: 'i-lucide-circle-plus',
-        },
-        {
-            label: 'Manage teams',
-            icon: 'i-lucide-cog',
-        },
-    ],
-]);
-
-const user = computed(() => ({
-    name: page.props.auth.user.name || 'Benjamin Canac',
-    avatar: {
-        src: 'https://github.com/benjamincanac.png',
-        alt: page.props.auth.user.name || 'Benjamin Canac',
-    },
-}));
-
-const userItems = computed(() => [
-    [
-        {
-            type: 'label',
-            label: user.value.name,
-            avatar: user.value.avatar,
-        },
-    ],
-    [
-        {
-            label: 'Profile',
-            icon: 'i-lucide-user',
-        },
-        {
-            label: 'Billing',
-            icon: 'i-lucide-credit-card',
-        },
-        {
-            label: 'Settings',
-            icon: 'i-lucide-settings',
-        },
-    ],
-    [
-        {
-            label: 'Theme',
-            icon: 'i-lucide-palette',
-            children: [
-                {
-                    label: 'Primary',
-                    slot: 'chip',
-                    chip: primaryColor.value,
-                    children: ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'].map((color) => ({
-                        label: color,
-                        chip: color,
-                        slot: 'chip',
-                        checked: color === primaryColor.value,
-                        type: 'checkbox',
-                        onSelect: (event) => {
-                            event.preventDefault();
-                            setPrimaryColor(color);
-                        },
-                    })),
-                },
-                {
-                    label: 'Neutral',
-                    slot: 'chip',
-                    chip: neutralColor.value === 'neutral' ? 'old-neutral' : neutralColor.value,
-                    children: ['slate', 'gray', 'zinc', 'neutral', 'stone'].map((color) => ({
-                        label: color,
-                        chip: color === 'neutral' ? 'old-neutral' : color,
-                        slot: 'chip',
-                        checked: color === neutralColor.value,
-                        type: 'checkbox',
-                        onSelect: (event) => {
-                            event.preventDefault();
-                            setNeutralColor(color);
-                        },
-                    })),
-                },
-            ],
-        },
-        {
-            label: 'Appearance',
-            icon: 'i-lucide-sun-moon',
-            children: [
-                {
-                    label: 'Light',
-                    icon: 'i-lucide-sun',
-                    type: 'checkbox',
-                    checked: appearance.value === 'light',
-                    onSelect: (event) => {
-                        event.preventDefault();
-                        setAppearance('light');
-                    },
-                },
-                {
-                    label: 'Dark',
-                    icon: 'i-lucide-moon',
-                    type: 'checkbox',
-                    checked: appearance.value === 'dark',
-                    onSelect: (event) => {
-                        event.preventDefault();
-                        setAppearance('dark');
-                    },
-                },
-            ],
-        },
-    ],
-    [
-        {
-            label: 'Templates',
-            icon: 'i-lucide-layout-template',
-            children: [
-                { label: 'Starter', to: 'https://starter-template.nuxt.dev/' },
-                { label: 'Landing', to: 'https://landing-template.nuxt.dev/' },
-                { label: 'Docs', to: 'https://docs-template.nuxt.dev/' },
-                { label: 'SaaS', to: 'https://saas-template.nuxt.dev/' },
-                {
-                    label: 'Dashboard',
-                    to: 'https://dashboard-template.nuxt.dev/',
-                    color: 'primary',
-                    checked: true,
-                    type: 'checkbox',
-                },
-                { label: 'Chat', to: 'https://chat-template.nuxt.dev/' },
-                { label: 'Portfolio', to: 'https://portfolio-template.nuxt.dev/' },
-                { label: 'Changelog', to: 'https://changelog-template.nuxt.dev/' },
-            ],
-        },
-    ],
-    [
-        {
-            label: 'Documentation',
-            icon: 'i-lucide-book-open',
-            to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-            target: '_blank',
-        },
-        {
-            label: 'GitHub repository',
-            icon: 'i-simple-icons-github',
-            to: 'https://github.com/nuxt-ui-templates/dashboard',
-            target: '_blank',
-        },
-        {
-            label: 'Log out',
-            icon: 'i-lucide-log-out',
-            onSelect: () => router.post('/logout'),
-        },
-    ],
-]);
-
-const links = computed(() => [
-    [
-        {
-            label: 'Home',
-            icon: 'i-lucide-house',
-            active: true,
-            onSelect: () => {
-                open.value = false;
-            },
-        },
-        {
-            label: 'Master Data',
-            icon: 'i-lucide-database',
-            onSelect: () => {
-                open.value = false;
-                router.visit('/master-data');
-            },
-        },
-        {
-            label: 'Users',
-            icon: 'i-lucide-users',
-            onSelect: () => {
-                open.value = false;
-                router.visit('/users');
-            },
-        },
-        {
-            label: 'Roles',
-            icon: 'i-lucide-shield',
-            onSelect: () => {
-                open.value = false;
-                router.visit('/roles');
-            },
-        },
-        {
-            label: 'Permissions',
-            icon: 'i-lucide-key-round',
-            onSelect: () => {
-                open.value = false;
-                router.visit('/permissions');
-            },
-        },
-        {
-            label: 'Inbox',
-            icon: 'i-lucide-inbox',
-            badge: '4',
-            onSelect: () => {
-                open.value = false;
-            },
-        },
-        {
-            label: 'Customers',
-            icon: 'i-lucide-users',
-            onSelect: () => {
-                open.value = false;
-            },
-        },
-        {
-            label: 'Settings',
-            icon: 'i-lucide-settings',
-            defaultOpen: true,
-            type: 'trigger',
-            children: [
-                {
-                    label: 'General',
-                    onSelect: () => {
-                        open.value = false;
-                    },
-                },
-                {
-                    label: 'Members',
-                    onSelect: () => {
-                        open.value = false;
-                    },
-                },
-                {
-                    label: 'Notifications',
-                    onSelect: () => {
-                        open.value = false;
-                    },
-                },
-                {
-                    label: 'Security',
-                    onSelect: () => {
-                        open.value = false;
-                    },
-                },
-            ],
-        },
-    ],
-    [
-        {
-            label: 'Feedback',
-            icon: 'i-lucide-message-circle',
-            to: 'https://github.com/nuxt-ui-templates/dashboard',
-            target: '_blank',
-        },
-        {
-            label: 'Help & Support',
-            icon: 'i-lucide-info',
-            to: 'https://github.com/nuxt-ui-templates/dashboard',
-            target: '_blank',
-        },
-    ],
-]);
-
-const searchGroups = computed(() => [
-    {
-        id: 'links',
-        label: 'Go to',
-        items: links.value.flat(),
-    },
-    {
-        id: 'code',
-        label: 'Code',
-        items: [
-            {
-                id: 'source',
-                label: 'View page source',
-                icon: 'i-simple-icons-github',
-                to: 'https://github.com/nuxt-ui-templates/dashboard/blob/main/app/pages/index.vue',
-                target: '_blank',
-            },
-        ],
-    },
-]);
-
-const actionItems = [
-    [
-        {
-            label: 'New mail',
-            icon: 'i-lucide-send',
-        },
-        {
-            label: 'New customer',
-            icon: 'i-lucide-user-plus',
-        },
-    ],
-];
 
 const ranges = [
     { label: 'Last 7 days', days: 7 },
@@ -607,228 +244,63 @@ const columns = [
     },
 ];
 
-const notifications = [
-    {
-        id: 1,
-        unread: true,
-        date: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-        sender: {
-            name: 'James Anderson',
-            avatar: {
-                src: 'https://i.pravatar.cc/80?img=1',
-                alt: 'James Anderson',
-            },
-        },
-        body: 'Sent you a message about the latest order.',
-    },
-    {
-        id: 2,
-        unread: true,
-        date: new Date(Date.now() - 1000 * 60 * 46).toISOString(),
-        sender: {
-            name: 'Mia White',
-            avatar: {
-                src: 'https://i.pravatar.cc/80?img=5',
-                alt: 'Mia White',
-            },
-        },
-        body: 'Requested access to the customer report.',
-    },
-    {
-        id: 3,
-        unread: false,
-        date: new Date(Date.now() - 1000 * 60 * 130).toISOString(),
-        sender: {
-            name: 'William Brown',
-            avatar: {
-                src: 'https://i.pravatar.cc/80?img=8',
-                alt: 'William Brown',
-            },
-        },
-        body: 'Uploaded a new invoice.',
-    },
-];
-
-const formatTimeAgo = (date) => {
-    const minutes = Math.max(1, Math.round((Date.now() - date.getTime()) / 60000));
-
-    if (minutes < 60) {
-        return `${minutes}m ago`;
-    }
-
-    const hours = Math.round(minutes / 60);
-
-    return `${hours}h ago`;
-};
 </script>
 
 <template>
-    <UDashboardGroup unit="rem">
-        <UDashboardSidebar
-            id="default"
-            v-model:open="open"
-            collapsible
-            resizable
-            class="bg-elevated/25"
-            :ui="{ footer: 'lg:border-t lg:border-default' }"
-        >
-            <template #header="{ collapsed }">
-                <UDropdownMenu
-                    :items="teamItems"
-                    :content="{ align: 'center', collisionPadding: 12 }"
-                    :ui="{ content: collapsed ? 'w-40' : 'w-(--reka-dropdown-menu-trigger-width)' }"
+    <div class="space-y-6">
+        <UDashboardToolbar>
+            <template #left>
+            <UPopover :content="{ align: 'start' }" :modal="true">
+                <UButton
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-lucide-calendar"
+                    class="-ms-1 data-[state=open]:bg-elevated group"
                 >
-                    <UButton
-                        v-bind="{
-                            ...selectedTeam,
-                            label: collapsed ? undefined : selectedTeam?.label,
-                            trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down',
-                        }"
-                        color="neutral"
-                        variant="ghost"
-                        block
-                        :square="collapsed"
-                        class="data-[state=open]:bg-elevated"
-                        :class="[!collapsed && 'py-2']"
-                        :ui="{ trailingIcon: 'text-dimmed' }"
-                    />
-                </UDropdownMenu>
-            </template>
+                    <span class="truncate">{{ rangeLabel }}</span>
 
-            <template #default="{ collapsed }">
-                <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
-
-                <UNavigationMenu
-                    :collapsed="collapsed"
-                    :items="links[0]"
-                    orientation="vertical"
-                    tooltip
-                    popover
-                />
-
-                <UNavigationMenu
-                    :collapsed="collapsed"
-                    :items="links[1]"
-                    orientation="vertical"
-                    tooltip
-                    class="mt-auto"
-                />
-            </template>
-
-            <template #footer="{ collapsed }">
-                <UDropdownMenu
-                    :items="userItems"
-                    :content="{ align: 'center', collisionPadding: 12 }"
-                    :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
-                >
-                    <UButton
-                        v-bind="{
-                            ...user,
-                            label: collapsed ? undefined : user?.name,
-                            trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down',
-                        }"
-                        color="neutral"
-                        variant="ghost"
-                        block
-                        :square="collapsed"
-                        class="data-[state=open]:bg-elevated"
-                        :ui="{ trailingIcon: 'text-dimmed' }"
-                    />
-
-                    <template #chip-leading="{ item }">
-                        <div class="inline-flex size-5 shrink-0 items-center justify-center">
-                            <span
-                                class="size-2 rounded-full bg-(--chip-light) ring ring-bg dark:bg-(--chip-dark)"
-                                :style="{
-                                    '--chip-light': `var(--color-${item.chip}-500)`,
-                                    '--chip-dark': `var(--color-${item.chip}-400)`,
-                                }"
-                            />
-                        </div>
+                    <template #trailing>
+                        <UIcon name="i-lucide-chevron-down" class="size-5 shrink-0 text-dimmed transition-transform duration-200 group-data-[state=open]:rotate-180" />
                     </template>
-                </UDropdownMenu>
-            </template>
-        </UDashboardSidebar>
+                </UButton>
 
-        <UDashboardSearch :groups="searchGroups" />
-
-        <UDashboardPanel id="home">
-            <template #header>
-                <UDashboardNavbar title="Home" :ui="{ right: 'gap-3' }">
-                    <template #leading>
-                        <UDashboardSidebarCollapse />
-                    </template>
-
-                    <template #right>
-                        <UTooltip text="Notifications" :shortcuts="['N']">
-                            <UButton color="neutral" variant="ghost" square @click="notificationsOpen = true">
-                                <UChip color="error" inset>
-                                    <UIcon name="i-lucide-bell" class="size-5 shrink-0" />
-                                </UChip>
-                            </UButton>
-                        </UTooltip>
-
-                        <UDropdownMenu :items="actionItems">
-                            <UButton icon="i-lucide-plus" size="md" class="rounded-full" />
-                        </UDropdownMenu>
-                    </template>
-                </UDashboardNavbar>
-
-                <UDashboardToolbar>
-                    <template #left>
-                        <UPopover :content="{ align: 'start' }" :modal="true">
+                <template #content>
+                    <div class="flex items-stretch divide-default sm:divide-x">
+                        <div class="hidden flex-col justify-center sm:flex">
                             <UButton
+                                v-for="(range, index) in ranges"
+                                :key="index"
+                                :label="range.label"
                                 color="neutral"
                                 variant="ghost"
-                                icon="i-lucide-calendar"
-                                class="-ms-1 data-[state=open]:bg-elevated group"
-                            >
-                                <span class="truncate">{{ rangeLabel }}</span>
+                                class="rounded-none px-4"
+                                :class="[isRangeSelected(range) ? 'bg-elevated' : 'hover:bg-elevated/50']"
+                                truncate
+                                @click="selectRange(range)"
+                            />
+                        </div>
 
-                                <template #trailing>
-                                    <UIcon name="i-lucide-chevron-down" class="size-5 shrink-0 text-dimmed transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                </template>
-                            </UButton>
-
-                            <template #content>
-                                <div class="flex items-stretch divide-default sm:divide-x">
-                                    <div class="hidden flex-col justify-center sm:flex">
-                                        <UButton
-                                            v-for="(range, index) in ranges"
-                                            :key="index"
-                                            :label="range.label"
-                                            color="neutral"
-                                            variant="ghost"
-                                            class="rounded-none px-4"
-                                            :class="[isRangeSelected(range) ? 'bg-elevated' : 'hover:bg-elevated/50']"
-                                            truncate
-                                            @click="selectRange(range)"
-                                        />
-                                    </div>
-
-                                    <UCalendar
-                                        v-model="calendarRange"
-                                        class="p-2"
-                                        :number-of-months="2"
-                                        range
-                                    />
-                                </div>
-                            </template>
-                        </UPopover>
-
-                        <USelect
-                            v-model="period"
-                            :items="periods"
-                            variant="ghost"
-                            class="data-[state=open]:bg-elevated"
-                            :ui="{ value: 'capitalize', itemLabel: 'capitalize', trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
+                        <UCalendar
+                            v-model="calendarRange"
+                            class="p-2"
+                            :number-of-months="2"
+                            range
                         />
-                    </template>
-                </UDashboardToolbar>
-            </template>
+                    </div>
+                </template>
+            </UPopover>
 
-            <template #body>
-                <UPageGrid class="gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-px">
+            <USelect
+                v-model="period"
+                :items="periods"
+                variant="ghost"
+                class="data-[state=open]:bg-elevated"
+                :ui="{ value: 'capitalize', itemLabel: 'capitalize', trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
+            />
+            </template>
+        </UDashboardToolbar>
+
+        <UPageGrid class="gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-px">
                     <UPageCard
                         v-for="(stat, index) in stats"
                         :key="index"
@@ -885,48 +357,17 @@ const formatTimeAgo = (date) => {
                     </div>
                 </UCard>
 
-                <UTable
-                    :data="sales"
-                    :columns="columns"
-                    class="mt-6 shrink-0"
-                    :ui="{
-                        base: 'table-fixed border-separate border-spacing-0',
-                        thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
-                        tbody: '[&>tr]:last:[&>td]:border-b-0',
-                        th: 'first:rounded-l-lg last:rounded-r-lg border-y border-default first:border-l last:border-r',
-                        td: 'border-b border-default',
-                    }"
-                />
-            </template>
-        </UDashboardPanel>
-
-        <USlideover v-model:open="notificationsOpen" title="Notifications">
-            <template #body>
-                <button
-                    v-for="notification in notifications"
-                    :key="notification.id"
-                    type="button"
-                    class="relative -mx-3 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded-md px-3 py-2.5 text-left hover:bg-elevated/50 first:-mt-3 last:-mb-3"
-                >
-                    <UChip color="error" :show="!!notification.unread" inset>
-                        <UAvatar v-bind="notification.sender.avatar" :alt="notification.sender.name" size="md" />
-                    </UChip>
-
-                    <div class="min-w-0 flex-1 text-sm">
-                        <p class="flex items-center justify-between gap-3">
-                            <span class="truncate font-medium text-highlighted">{{ notification.sender.name }}</span>
-
-                            <time :datetime="notification.date" class="shrink-0 text-xs text-muted">
-                                {{ formatTimeAgo(new Date(notification.date)) }}
-                            </time>
-                        </p>
-
-                        <p class="truncate text-dimmed">
-                            {{ notification.body }}
-                        </p>
-                    </div>
-                </button>
-            </template>
-        </USlideover>
-    </UDashboardGroup>
+        <UTable
+            :data="sales"
+            :columns="columns"
+            class="mt-6 shrink-0"
+            :ui="{
+                base: 'table-fixed border-separate border-spacing-0',
+                thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
+                tbody: '[&>tr]:last:[&>td]:border-b-0',
+                th: 'first:rounded-l-lg last:rounded-r-lg border-y border-default first:border-l last:border-r',
+                td: 'border-b border-default',
+            }"
+        />
+    </div>
 </template>

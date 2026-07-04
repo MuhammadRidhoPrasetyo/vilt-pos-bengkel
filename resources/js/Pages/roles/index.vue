@@ -1,8 +1,13 @@
 <script setup>
-import AdminShell from '../../Components/AdminShell.vue';
+import DeleteConfirmationModal from '../../Components/DeleteConfirmationModal.vue';
 import PaginationLinks from '../../Components/PaginationLinks.vue';
+import DashboardLayout from '../../Layouts/DashboardLayout.vue';
 import { router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+
+defineOptions({
+    layout: [DashboardLayout, { title: 'Roles', panelId: 'roles' }],
+});
 
 const props = defineProps({
     roles: Object,
@@ -13,6 +18,9 @@ const props = defineProps({
 const search = ref(props.filters?.search || '');
 const modalMode = ref(null);
 const selectedRole = ref(null);
+const deleteModalOpen = ref(false);
+const roleToDelete = ref(null);
+const deleting = ref(false);
 
 const form = useForm({
     name: '',
@@ -68,25 +76,47 @@ const submit = () => {
 };
 
 const destroyRole = (role) => {
-    if (confirm(`Hapus role ${role.name}?`)) {
-        router.delete(`/roles/${role.id}`, { preserveScroll: true });
+    roleToDelete.value = role;
+    deleteModalOpen.value = true;
+};
+
+const confirmDelete = () => {
+    if (!roleToDelete.value) {
+        return;
     }
+
+    deleting.value = true;
+
+    router.delete(`/roles/${roleToDelete.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            deleteModalOpen.value = false;
+            roleToDelete.value = null;
+        },
+        onFinish: () => {
+            deleting.value = false;
+        },
+    });
 };
 </script>
 
 <template>
-    <AdminShell title="Roles" description="Kelola role dan permission yang melekat pada role.">
+    <div class="space-y-4">
         <section class="space-y-4">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="relative max-w-md grow">
-                    <UIcon name="i-lucide-search" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <input v-model="search" class="w-full rounded-md border border-default bg-default py-2 pl-9 pr-3 text-sm outline-none focus:border-primary" type="search" placeholder="Cari role" />
-                </div>
-                <button class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90" type="button" @click="openCreate">
-                    <UIcon name="i-lucide-plus" class="size-4" />
-                    Tambah Role
-                </button>
-            </div>
+            <UDashboardToolbar>
+                <template #left>
+                    <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="relative max-w-md grow">
+                            <UIcon name="i-lucide-search" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                            <input v-model="search" class="w-full rounded-md border border-default bg-default py-2 pl-9 pr-3 text-sm outline-none focus:border-primary" type="search" placeholder="Cari role" />
+                        </div>
+                        <button class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90" type="button" @click="openCreate">
+                            <UIcon name="i-lucide-plus" class="size-4" />
+                            Tambah Role
+                        </button>
+                    </div>
+                </template>
+            </UDashboardToolbar>
 
             <div class="overflow-hidden rounded-lg border border-default">
                 <table class="w-full min-w-[760px] divide-y divide-default text-sm">
@@ -183,5 +213,13 @@ const destroyRole = (role) => {
                 </form>
             </div>
         </div>
-    </AdminShell>
+
+        <DeleteConfirmationModal
+            v-model:open="deleteModalOpen"
+            title="Hapus role?"
+            :description="`Role ${roleToDelete?.name || ''} akan dihapus dari sistem.`"
+            :loading="deleting"
+            @confirm="confirmDelete"
+        />
+    </div>
 </template>

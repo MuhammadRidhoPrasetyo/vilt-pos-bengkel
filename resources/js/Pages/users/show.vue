@@ -1,6 +1,10 @@
 <script setup>
-import AdminShell from '../../Components/AdminShell.vue';
+import DashboardLayout from '../../Layouts/DashboardLayout.vue';
 import { Link } from '@inertiajs/vue3';
+
+defineOptions({
+    layout: [DashboardLayout, { title: 'Detail User', panelId: 'users-show' }],
+});
 
 defineProps({
     user: Object,
@@ -8,8 +12,7 @@ defineProps({
 </script>
 
 <template>
-    <AdminShell title="Detail User" description="Informasi akun pengguna.">
-        <div class="max-w-4xl space-y-6 rounded-lg border border-default p-5">
+    <div class="max-w-4xl space-y-6 rounded-lg border border-default p-5">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-xl font-semibold">{{ user.data.name }}</h2>
@@ -56,6 +59,5 @@ defineProps({
                 <UIcon name="i-lucide-arrow-left" class="size-4" />
                 Kembali
             </Link>
-        </div>
-    </AdminShell>
+    </div>
 </template>

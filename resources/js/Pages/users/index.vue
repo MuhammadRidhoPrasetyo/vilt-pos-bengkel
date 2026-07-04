@@ -1,8 +1,13 @@
 <script setup>
-import AdminShell from '../../Components/AdminShell.vue';
+import DeleteConfirmationModal from '../../Components/DeleteConfirmationModal.vue';
 import PaginationLinks from '../../Components/PaginationLinks.vue';
+import DashboardLayout from '../../Layouts/DashboardLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
+
+defineOptions({
+    layout: [DashboardLayout, { title: 'Users', panelId: 'users' }],
+});
 
 const props = defineProps({
     users: Object,
@@ -10,34 +15,58 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
+const deleteModalOpen = ref(false);
+const userToDelete = ref(null);
+const deleting = ref(false);
 
 watch(search, (value) => {
     router.get('/users', { search: value }, { preserveState: true, replace: true });
 });
 
 const destroyUser = (user) => {
-    if (confirm(`Hapus user ${user.name}?`)) {
-        router.delete(`/users/${user.id}`, { preserveScroll: true });
+    userToDelete.value = user;
+    deleteModalOpen.value = true;
+};
+
+const confirmDelete = () => {
+    if (!userToDelete.value) {
+        return;
     }
+
+    deleting.value = true;
+
+    router.delete(`/users/${userToDelete.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            deleteModalOpen.value = false;
+            userToDelete.value = null;
+        },
+        onFinish: () => {
+            deleting.value = false;
+        },
+    });
 };
 </script>
 
 <template>
-    <AdminShell title="Users" description="Kelola akun pengguna dan role akses.">
-        <section class="space-y-4">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="relative max-w-md grow">
-                    <UIcon name="i-lucide-search" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <input v-model="search" class="w-full rounded-md border border-default bg-default py-2 pl-9 pr-3 text-sm outline-none focus:border-primary" type="search" placeholder="Cari user" />
+    <section class="space-y-4">
+        <UDashboardToolbar>
+            <template #left>
+                <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="relative max-w-md grow">
+                        <UIcon name="i-lucide-search" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                        <input v-model="search" class="w-full rounded-md border border-default bg-default py-2 pl-9 pr-3 text-sm outline-none focus:border-primary" type="search" placeholder="Cari user" />
+                    </div>
+                    <Link href="/users/create" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
+                        <UIcon name="i-lucide-plus" class="size-4" />
+                        Tambah User
+                    </Link>
                 </div>
-                <Link href="/users/create" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
-                    <UIcon name="i-lucide-plus" class="size-4" />
-                    Tambah User
-                </Link>
-            </div>
+            </template>
+        </UDashboardToolbar>
 
-            <div class="overflow-hidden rounded-lg border border-default">
-                <table class="w-full min-w-[900px] divide-y divide-default text-sm">
+        <div class="overflow-hidden rounded-lg border border-default">
+            <table class="w-full min-w-[900px] divide-y divide-default text-sm">
                     <thead class="bg-muted/50 text-left text-xs uppercase text-muted">
                         <tr>
                             <th class="px-4 py-3">Nama</th>
@@ -82,10 +111,17 @@ const destroyUser = (user) => {
                             <td class="px-4 py-8 text-center text-muted" colspan="6">Belum ada user.</td>
                         </tr>
                     </tbody>
-                </table>
-            </div>
+            </table>
+        </div>
 
-            <PaginationLinks :links="users.meta.links" />
-        </section>
-    </AdminShell>
+        <PaginationLinks :links="users.meta.links" />
+
+        <DeleteConfirmationModal
+            v-model:open="deleteModalOpen"
+            title="Hapus user?"
+            :description="`User ${userToDelete?.name || ''} akan dihapus dari sistem.`"
+            :loading="deleting"
+            @confirm="confirmDelete"
+        />
+    </section>
 </template>
