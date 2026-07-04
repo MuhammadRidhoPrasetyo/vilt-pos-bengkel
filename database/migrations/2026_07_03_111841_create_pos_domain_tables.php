@@ -96,7 +96,6 @@ return new class extends Migration
             $table->foreignUuid('parent_id')->nullable()->index()->constrained('product_categories')->nullOnDelete();
             $table->string('name');
             $table->enum('pricing_mode', ['fixed', 'editable'])->default('fixed');
-            $table->enum('item_type', ['part', 'labor'])->default('part');
             $table->timestamps();
         });
 
@@ -113,7 +112,7 @@ return new class extends Migration
             $table->foreignUuid('brand_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignUuid('unit_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
-            $table->enum('type', ['goods', 'service']);
+            $table->enum('item_type', ['part', 'labor']);
             $table->boolean('has_variants')->default(false);
             $table->text('description')->nullable();
             $table->timestamps();
@@ -140,17 +139,62 @@ return new class extends Migration
         Schema::create('warehouses', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('store_id')->constrained()->cascadeOnDelete();
+            $table->string('code');
             $table->string('name');
+            $table->text('description')->nullable();
+            $table->text('address')->nullable();
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('zip_code')->nullable();
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
+            $table->string('phone')->nullable();
+            $table->foreignUuid('manager_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->decimal('max_capacity', 15, 2)->nullable();
+            $table->string('capacity_uom')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort')->nullable();
+            $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->softDeletes();
+            $table->timestamps();
+
+            $table->unique(['store_id', 'code']);
+        });
+
+        Schema::create('location_types', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name')->unique();
+            $table->string('description')->nullable();
             $table->timestamps();
         });
 
         Schema::create('warehouse_locations', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('warehouse_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('parent_id')->nullable()->constrained('warehouse_locations')->nullOnDelete();
+            $table->foreignUuid('location_type_id')->constrained()->restrictOnDelete();
+            $table->string('code');
             $table->string('name');
-            $table->string('rack')->nullable();
-            $table->string('shelf')->nullable();
+            $table->string('full_path')->nullable();
+            $table->string('barcode')->nullable();
+            $table->text('description')->nullable();
+            $table->integer('position_x')->nullable();
+            $table->integer('position_y')->nullable();
+            $table->integer('position_z')->nullable();
+            $table->decimal('max_weight', 15, 2)->nullable();
+            $table->decimal('max_volume', 15, 2)->nullable();
+            $table->boolean('is_scrap')->default(false);
+            $table->boolean('is_quarantine')->default(false);
+            $table->boolean('is_return')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort')->nullable();
+            $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->softDeletes();
             $table->timestamps();
+
+            $table->unique(['warehouse_id', 'code']);
         });
 
         Schema::create('product_prices', function (Blueprint $table) {
@@ -246,6 +290,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('product_variant_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('warehouse_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('warehouse_location_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignUuid('purchase_item_id')->nullable()->constrained()->nullOnDelete();
             $table->integer('initial_quantity');
             $table->integer('current_quantity');
@@ -538,6 +583,7 @@ return new class extends Migration
         Schema::dropIfExists('product_stocks');
         Schema::dropIfExists('product_prices');
         Schema::dropIfExists('warehouse_locations');
+        Schema::dropIfExists('location_types');
         Schema::dropIfExists('warehouses');
         Schema::dropIfExists('product_variant_attributes');
         Schema::dropIfExists('product_variants');

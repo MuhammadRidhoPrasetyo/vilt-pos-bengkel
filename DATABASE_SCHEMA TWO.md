@@ -490,7 +490,6 @@ Tabel kategori produk.
 | parent_id    | bigint    | NULLABLE, FK (product_categories), INDEX      | Kategori induk                 |
 | name         | string    |                                               | Nama kategori                  |
 | pricing_mode | enum      | VALUES: 'fixed', 'editable', DEFAULT: 'fixed' | Mode harga (tetap/bisa diubah) |
-| item_type    | enum      | VALUES: 'part', 'labor', DEFAULT: 'part'      | Tipe item (barang/jasa)        |
 | created_at   | timestamp |                                               |                                |
 | updated_at   | timestamp |                                               |                                |
 
@@ -521,11 +520,18 @@ Tabel induk produk.
 | brand_id            | bigint    | NULLABLE, FK (brands)      | Merk                    |
 | unit_id             | bigint    | NULLABLE, FK (units)       | Satuan dasar            |
 | name                | string    |                            | Nama induk produk       |
-| type                | enum      | VALUES: 'goods', 'service' | Tipe (Barang/Jasa)      |
+| item_type           | enum      | VALUES: 'part', 'labor'    | Tipe item (barang/jasa) |
 | has_variants        | boolean   | DEFAULT: false             | Apakah memiliki varian? |
 | description         | text      | NULLABLE                   | Deskripsi               |
 | created_at          | timestamp |                            |                         |
 | updated_at          | timestamp |                            |                         |
+
+**Catatan:**
+
+- `product_categories` hanya digunakan untuk pengelompokan katalog, navigasi, dan laporan.
+- `products.item_type` menjadi sumber utama untuk membedakan barang stok (`part`) dan jasa kerja (`labor`).
+- Produk dengan `item_type = 'part'` dapat masuk proses stok, pembelian, dan inventory movement.
+- Produk dengan `item_type = 'labor'` dapat dijual sebagai jasa, tetapi tidak masuk stok.
 
 ---
 
@@ -565,29 +571,86 @@ Tabel pivot antara varian dan opsi atribut.
 
 Tabel Gudang dalam Toko.
 
-| Field      | Type      | Attributes           | Keterangan   |
-| ---------- | --------- | -------------------- | ------------ |
-| id         | uuid      | PRIMARY KEY          |              |
-| store_id   | uuid      | FK (stores, CASCADE) | Toko pemilik |
-| name       | string    |                      | Nama gudang  |
-| created_at | timestamp |                      |              |
-| updated_at | timestamp |                      |              |
+| Field        | Type          | Attributes                        | Keterangan                       |
+| ------------ | ------------- | --------------------------------- | -------------------------------- |
+| id           | uuid          | PRIMARY KEY                       |                                  |
+| store_id     | uuid          | FK (stores, CASCADE), UNIQUE PAIR | Toko pemilik                     |
+| code         | string        | UNIQUE PAIR with store_id         | Kode gudang unik per toko        |
+| name         | string        |                                   | Nama gudang                      |
+| description  | text          | NULLABLE                          | Deskripsi                        |
+| address      | text          | NULLABLE                          | Alamat gudang                    |
+| city         | string        | NULLABLE                          | Kota                             |
+| state        | string        | NULLABLE                          | Provinsi                         |
+| zip_code     | string        | NULLABLE                          | Kode pos                         |
+| latitude     | decimal(10,8) | NULLABLE                          | Latitude                         |
+| longitude    | decimal(11,8) | NULLABLE                          | Longitude                        |
+| phone        | string        | NULLABLE                          | Telepon gudang                   |
+| manager_id   | uuid          | NULLABLE, FK (users)              | Penanggung jawab gudang          |
+| max_capacity | decimal(15,2) | NULLABLE                          | Kapasitas maksimum               |
+| capacity_uom | string        | NULLABLE                          | Satuan kapasitas, misal m2/palet |
+| is_active    | boolean       | DEFAULT: true                     | Status aktif                     |
+| sort         | integer       | NULLABLE                          | Urutan tampil                    |
+| deleted_at   | timestamp     | NULLABLE                          | Soft delete                      |
+| created_by   | uuid          | NULLABLE, FK (users)              | User pembuat                     |
+| updated_by   | uuid          | NULLABLE, FK (users)              | User pengubah terakhir           |
+| created_at   | timestamp     |                                   |                                  |
+| updated_at   | timestamp     |                                   |                                  |
+
+**Unique Index:** (store_id, code)
+
+---
+
+### 📋 location_types
+
+Tabel master tipe lokasi gudang.
+
+| Field       | Type      | Attributes                  | Keterangan                                   |
+| ----------- | --------- | --------------------------- | -------------------------------------------- |
+| id          | uuid      | PRIMARY KEY                 |                                              |
+| name        | string    | UNIQUE                      | Contoh: zone, aisle, rack, shelf, bin, floor |
+| description | string    | NULLABLE                    | Deskripsi tipe lokasi                        |
+| created_at  | timestamp |                             |                                              |
+| updated_at  | timestamp |                             |                                              |
 
 ---
 
 ### 📋 warehouse_locations
 
-Tabel Lokasi/Rak di dalam Gudang.
+Tabel lokasi penyimpanan hierarkis di dalam gudang.
 
-| Field        | Type      | Attributes               | Keterangan    |
-| ------------ | --------- | ------------------------ | ------------- |
-| id           | uuid      | PRIMARY KEY              |               |
-| warehouse_id | uuid      | FK (warehouses, CASCADE) | Gudang        |
-| name         | string    |                          | Nama (Blok A) |
-| rack         | string    | NULLABLE                 | Rak           |
-| shelf        | string    | NULLABLE                 | Baris/Tingkat |
-| created_at   | timestamp |                          |               |
-| updated_at   | timestamp |                          |               |
+| Field            | Type          | Attributes                              | Keterangan                                  |
+| ---------------- | ------------- | --------------------------------------- | ------------------------------------------- |
+| id               | uuid          | PRIMARY KEY                             |                                             |
+| warehouse_id     | uuid          | FK (warehouses, CASCADE), UNIQUE PAIR   | Gudang                                      |
+| parent_id        | uuid          | NULLABLE, FK (warehouse_locations)      | Parent lokasi untuk hierarchy               |
+| location_type_id | uuid          | FK (location_types), RESTRICT ON DELETE | Tipe lokasi                                 |
+| code             | string        | UNIQUE PAIR with warehouse_id           | Kode lokasi unik per gudang                 |
+| name             | string        |                                         | Nama lokasi                                 |
+| full_path        | string        | NULLABLE                                | Path lengkap, misal Zone-A/Rack-01/Shelf-02 |
+| barcode          | string        | NULLABLE                                | Barcode lokasi                              |
+| description      | text          | NULLABLE                                | Deskripsi                                   |
+| position_x       | integer       | NULLABLE                                | Posisi X                                    |
+| position_y       | integer       | NULLABLE                                | Posisi Y                                    |
+| position_z       | integer       | NULLABLE                                | Posisi Z                                    |
+| max_weight       | decimal(15,2) | NULLABLE                                | Berat maksimum                              |
+| max_volume       | decimal(15,2) | NULLABLE                                | Volume maksimum                             |
+| is_scrap         | boolean       | DEFAULT: false                          | Lokasi scrap                                |
+| is_quarantine    | boolean       | DEFAULT: false                          | Lokasi karantina                            |
+| is_return        | boolean       | DEFAULT: false                          | Lokasi retur                                |
+| is_active        | boolean       | DEFAULT: true                           | Status aktif                                |
+| sort             | integer       | NULLABLE                                | Urutan tampil                               |
+| deleted_at       | timestamp     | NULLABLE                                | Soft delete                                 |
+| created_by       | uuid          | NULLABLE, FK (users)                    | User pembuat                                |
+| updated_by       | uuid          | NULLABLE, FK (users)                    | User pengubah terakhir                      |
+| created_at       | timestamp     |                                         |                                             |
+| updated_at       | timestamp     |                                         |                                             |
+
+**Unique Index:** (warehouse_id, code)
+
+**Catatan:**
+
+- Struktur lama `rack` dan `shelf` digantikan oleh hierarchy `parent_id` + `location_type_id`.
+- `warehouse_locations` tetap dipakai sebagai nama tabel agar kompatibel dengan relasi stok yang sudah ada.
 
 ---
 
@@ -626,7 +689,7 @@ Tabel stok per varian produk di lokasi gudang. Jasa tidak masuk ke tabel ini.
 | id                    | uuid      | PRIMARY KEY                        |                      |
 | product_variant_id    | uuid      | FK (product_variants, CASCADE)     | Varian Produk        |
 | warehouse_id          | uuid      | FK (warehouses, CASCADE)           | Gudang               |
-| warehouse_location_id | uuid      | NULLABLE, FK (warehouse_locations) | Lokasi/Rak spesifik  |
+| warehouse_location_id | uuid      | NULLABLE, FK (warehouse_locations) | Lokasi gudang spesifik |
 | quantity              | integer   |                                    | Jumlah stok          |
 | is_hidden             | boolean   | DEFAULT: false                     | Tersembunyi dari POS |
 | minimum_stock         | integer   | DEFAULT: 0                         | Minimum stok alert   |
@@ -750,6 +813,7 @@ Tabel untuk mencatat Lot/Batch barang masuk (Mendukung HPP FIFO).
 | id                 | uuid          | PRIMARY KEY                             |                                |
 | product_variant_id | uuid          | FK (product_variants, CASCADE)          | Varian Produk                  |
 | warehouse_id       | uuid          | FK (warehouses, CASCADE)                | Gudang penerima                |
+| warehouse_location_id | uuid       | NULLABLE, FK (warehouse_locations)      | Lokasi penerimaan stok         |
 | purchase_item_id   | uuid          | NULLABLE, FK (purchase_items, SET NULL) | Referensi pembelian (jika ada) |
 | initial_quantity   | integer       |                                         | Jumlah masuk awal              |
 | current_quantity   | integer       |                                         | Sisa stok batch saat ini       |
@@ -807,24 +871,34 @@ Buat service_orders sebelum detail service. Untuk menghindari circular dependenc
 
 ---
 
-### 📋 customer_vehicles
+### 📋 vehicles
 
-Tabel kendaraan pelanggan.
+Tabel master kendaraan per toko. Kendaraan tidak wajib terikat ke customer permanen.
 
-| Field        | Type      | Attributes               | Keterangan                |
-| ------------ | --------- | ------------------------ | ------------------------- |
-| id           | uuid      | PRIMARY KEY              |                           |
-| customer_id  | uuid      | NULLABLE, FK (partners) | Pelanggan                 |
-| plate_number | string    |                          | Nomor polisi (KT 1234 AB) |
-| brand        | string    | NULLABLE                 | Merk (Honda, Yamaha)      |
-| model        | string    | NULLABLE                 | Model (Beat, Vario)       |
-| year         | year      | NULLABLE                 | Tahun                     |
-| color        | string    | NULLABLE                 | Warna                     |
-| notes        | text      | NULLABLE                 | Catatan                   |
-| created_at   | timestamp |                          |                           |
-| updated_at   | timestamp |                          |                           |
+| Field          | Type      | Attributes                                   | Keterangan                         |
+| -------------- | --------- | -------------------------------------------- | ---------------------------------- |
+| id             | uuid      | PRIMARY KEY                                  |                                    |
+| store_id       | uuid      | FK (stores), INDEX                           | Toko/bengkel pemilik data          |
+| customer_id    | uuid      | NULLABLE, FK (partners, SET NULL), INDEX     | Customer permanen opsional         |
+| plate_number   | string    |                                              | Nomor polisi (KT 1234 AB)          |
+| vehicle_type   | string    | NULLABLE                                     | Jenis kendaraan (motor/mobil/dll.) |
+| brand          | string    | NULLABLE                                     | Merk (Honda, Yamaha)               |
+| model          | string    | NULLABLE                                     | Model (Beat, Vario)                |
+| year           | year      | NULLABLE                                     | Tahun                              |
+| color          | string    | NULLABLE                                     | Warna                              |
+| chassis_number | string    | NULLABLE                                     | Nomor rangka                       |
+| engine_number  | string    | NULLABLE                                     | Nomor mesin                        |
+| notes          | text      | NULLABLE                                     | Catatan                            |
+| created_at     | timestamp |                                              |                                    |
+| updated_at     | timestamp |                                              |                                    |
 
-**Unique Index:** (customer_id, plate_number)
+**Unique Index:** (store_id, plate_number)
+
+**Catatan:**
+
+- `customer_id` hanya diisi jika customer memang disimpan sebagai partner permanen.
+- Data customer walk-in tetap disimpan sebagai snapshot di `service_order_customers`.
+- Histori service tetap memakai snapshot kendaraan di `service_order_units` agar aman saat kendaraan berganti pemilik atau master kendaraan diperbarui.
 
 ---
 
@@ -857,14 +931,16 @@ Tabel unit/kendaraan dalam service order.
 | ------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------- |
 | id                  | uuid          | PRIMARY KEY                                                                                                          |                     |
 | service_order_id    | uuid          | FK (service_orders, CASCADE), INDEX                                                                                  | Service order       |
-| customer_vehicle_id | uuid          | FK (customer_vehicles)                                                                                               | Kendaraan           |
+| vehicle_id          | uuid          | FK (vehicles)                                                                                                        | Kendaraan           |
 | status              | enum          | VALUES: 'checkin', 'diagnosis', 'in_progress', 'waiting_parts', 'ready', 'invoiced', 'cancelled', DEFAULT: 'checkin' | Status unit         |
 | checkin_at          | dateTime      |                                                                                                                      | Waktu check-in      |
 | completed_at        | dateTime      | NULLABLE                                                                                                             | Waktu selesai       |
 | plate_number        | string        |                                                                                                                      | Nomor polisi        |
 | brand               | string        | NULLABLE                                                                                                             | Merk                |
 | model               | string        | NULLABLE                                                                                                             | Model               |
+| year                | year          | NULLABLE                                                                                                             | Tahun kendaraan     |
 | color               | string        | NULLABLE                                                                                                             | Warna               |
+| odometer            | unsignedInteger | NULLABLE                                                                                                           | Kilometer saat masuk |
 | complaint           | text          | NULLABLE                                                                                                             | Keluhan spesifik    |
 | diagnosis           | text          | NULLABLE                                                                                                             | Diagnosis montir    |
 | work_done           | text          | NULLABLE                                                                                                             | Ringkasan pekerjaan |
@@ -899,7 +975,7 @@ Tabel item dalam service order unit.
 | --------------------- | --------------- | ---------------------------------------- | ----------------------------- |
 | id                    | uuid            | PRIMARY KEY                              |                               |
 | service_order_unit_id | uuid            | FK (service_order_units, CASCADE), INDEX | Service unit                  |
-| item_type             | enum            | VALUES: 'part', 'labor'                  | Tipe item (barang/jasa)       |
+| item_type             | enum            | VALUES: 'part', 'labor'                  | Snapshot tipe item            |
 | product_variant_id    | uuid            | NULLABLE, FK (product_variants)          | Varian Produk (opsional)      |
 | description           | string          | NULLABLE                                 | Deskripsi (untuk jasa custom) |
 | quantity              | unsignedInteger | DEFAULT: 1                               | Jumlah                        |
@@ -908,17 +984,22 @@ Tabel item dalam service order unit.
 | created_at            | timestamp       |                                          |                               |
 | updated_at            | timestamp       |                                          |                               |
 
+**Catatan:**
+
+- Jika `product_variant_id` diisi, `item_type` mengikuti `products.item_type` dari varian produk tersebut.
+- Jika `product_variant_id` kosong, `item_type` tetap diperlukan untuk mencatat item custom seperti jasa tambahan manual.
+
 ---
 
 ### 📋 service_order_customers
 
-Tabel data pelanggan dalam service order.
+Tabel snapshot data pelanggan dalam service order.
 
 | Field            | Type      | Attributes                        | Keterangan    |
 | ---------------- | --------- | --------------------------------- | ------------- |
 | id               | uuid      | PRIMARY KEY                       |               |
 | service_order_id | uuid      | FK (service_orders, CASCADE)      | Service order |
-| customer_id      | uuid      | NULLABLE, FK (partners, CASCADE) | Pelanggan     |
+| customer_id      | uuid      | NULLABLE, FK (partners, SET NULL) | Pelanggan     |
 | name             | string    |                                   | Nama          |
 | phone            | string    | NULLABLE                          | Nomor telepon |
 | address          | text      | NULLABLE                          | Alamat        |
@@ -1065,7 +1146,7 @@ Tabel item penyesuaian stok.
 | ------------------- | --------------- | ------------------------------- | ---------------- |
 | id                  | uuid            | PRIMARY KEY                     |                  |
 | stock_adjustment_id | uuid            | FK (stock_adjustments, CASCADE) | Penyesuaian stok |
-| product_id          | uuid            | FK (products)                   | Produk           |
+| product_variant_id  | uuid            | FK (product_variants)           | Varian Produk    |
 | adjustment_type     | enum            | VALUES: 'increase', 'decrease'  | Tipe penyesuaian |
 | quantity            | unsignedInteger |                                 | Jumlah           |
 | note                | string          | NULLABLE                        | Catatan          |
@@ -1187,12 +1268,21 @@ Tidak ada tabel baru pada phase ini. Gunakan migration `Schema::table(...)` untu
 | partner_role_partner         | partner_role_id       | partner_roles        | CASCADE        |
 | users                        | store_id              | stores               | -              |
 | sessions                     | user_id               | users                | -              |
+| warehouses                   | store_id              | stores               | CASCADE        |
+| warehouses                   | manager_id            | users                | NULL ON DELETE |
+| warehouses                   | created_by            | users                | NULL ON DELETE |
+| warehouses                   | updated_by            | users                | NULL ON DELETE |
+| warehouse_locations          | warehouse_id          | warehouses           | CASCADE        |
+| warehouse_locations          | parent_id             | warehouse_locations  | NULL ON DELETE |
+| warehouse_locations          | location_type_id      | location_types       | RESTRICT       |
+| warehouse_locations          | created_by            | users                | NULL ON DELETE |
+| warehouse_locations          | updated_by            | users                | NULL ON DELETE |
 | product_prices               | product_variant_id    | product_variants     | CASCADE        |
 | product_prices               | store_id              | stores               | CASCADE        |
 | product_stocks               | product_variant_id    | product_variants     | CASCADE        |
-| product_stocks               | store_id              | stores               | -              |
-| product_stocks               | product_price_id      | product_prices       | -              |
-| product_discounts            | product_id            | products             | -              |
+| product_stocks               | warehouse_id          | warehouses           | CASCADE        |
+| product_stocks               | warehouse_location_id | warehouse_locations  | NULL ON DELETE |
+| product_discounts            | product_variant_id    | product_variants     | CASCADE        |
 | product_discounts            | store_id              | stores               | -              |
 | product_discounts            | discount_type_id      | discount_types       | -              |
 | products                     | product_category_id   | product_categories   | -              |
@@ -1204,7 +1294,14 @@ Tidak ada tabel baru pada phase ini. Gunakan migration `Schema::table(...)` untu
 | purchases                    | created_by            | users                | -              |
 | purchases                    | received_by           | users                | -              |
 | purchase_items               | purchase_id           | purchases            | CASCADE        |
-| purchase_items               | product_id            | products             | -              |
+| purchase_items               | product_variant_id    | product_variants     | -              |
+| inventory_batches            | product_variant_id    | product_variants     | CASCADE        |
+| inventory_batches            | warehouse_id          | warehouses           | CASCADE        |
+| inventory_batches            | warehouse_location_id | warehouse_locations  | NULL ON DELETE |
+| inventory_batches            | purchase_item_id      | purchase_items       | NULL ON DELETE |
+| inventory_movements          | warehouse_id          | warehouses           | CASCADE        |
+| inventory_movements          | product_variant_id    | product_variants     | CASCADE        |
+| inventory_movements          | inventory_batch_id    | inventory_batches    | NULL ON DELETE |
 | printers                     | store_id              | stores               | -              |
 | transactions                 | store_id              | stores               | -              |
 | transactions                 | user_id               | users                | -              |
@@ -1222,35 +1319,36 @@ Tidak ada tabel baru pada phase ini. Gunakan migration `Schema::table(...)` untu
 | stock_adjustments            | store_id              | stores               | CASCADE        |
 | stock_adjustments            | posted_by             | users                | -              |
 | stock_adjustment_items       | stock_adjustment_id   | stock_adjustments    | CASCADE        |
-| stock_adjustment_items       | product_id            | products             | -              |
+| stock_adjustment_items       | product_variant_id    | product_variants     | -              |
 | product_movements            | product_id            | products             | -              |
 | product_movements            | store_id              | stores               | -              |
 | product_movements            | created_by            | users                | -              |
-| product_price_histories      | product_id            | products             | CASCADE        |
+| product_price_histories      | product_variant_id    | product_variants     | CASCADE        |
 | product_price_histories      | store_id              | stores               | CASCADE        |
 | product_price_histories      | product_price_id      | product_prices       | CASCADE        |
-| product_labels               | product_id            | products             | CASCADE        |
+| product_labels               | product_variant_id    | product_variants     | CASCADE        |
 | product_labels               | product_category_id   | product_categories   | -              |
 | product_labels               | brand_id              | brands               | -              |
 | service_orders               | store_id              | stores               | -              |
 | service_orders               | customer_id           | partners            | NULL ON DELETE |
 | service_orders               | transaction_id        | transactions         | NULL ON DELETE |
-| customer_vehicles            | customer_id           | partners            | -              |
+| vehicles                     | store_id              | stores               | -              |
+| vehicles                     | customer_id           | partners            | NULL ON DELETE |
 | service_order_units          | service_order_id      | service_orders       | CASCADE        |
-| service_order_units          | customer_vehicle_id   | customer_vehicles    | -              |
+| service_order_units          | vehicle_id            | vehicles             | -              |
 | service_order_unit_mechanics | service_order_unit_id | service_order_units  | CASCADE        |
 | service_order_unit_mechanics | mechanic_id           | users                | -              |
 | service_order_items          | service_order_unit_id | service_order_units  | CASCADE        |
-| service_order_items          | product_id            | products             | -              |
+| service_order_items          | product_variant_id    | product_variants     | -              |
 | service_order_customers      | service_order_id      | service_orders       | CASCADE        |
-| service_order_customers      | customer_id           | partners            | CASCADE        |
+| service_order_customers      | customer_id           | partners            | NULL ON DELETE |
 | document_sequences           | store_id              | stores               | CASCADE        |
 | stock_transfers              | from_store_id         | stores               | -              |
 | stock_transfers              | to_store_id           | stores               | -              |
 | stock_transfers              | created_by            | users                | -              |
 | stock_transfers              | posted_by             | users                | -              |
 | stock_transfer_items         | stock_transfer_id     | stock_transfers      | CASCADE        |
-| stock_transfer_items         | product_id            | products             | -              |
+| stock_transfer_items         | product_variant_id    | product_variants     | -              |
 | stock_transfer_items         | product_price_id      | product_prices       | -              |
 | cash_flows                   | store_id              | stores               | CASCADE        |
 | cash_flows                   | user_id               | users                | -              |
@@ -1262,7 +1360,7 @@ Tidak ada tabel baru pada phase ini. Gunakan migration `Schema::table(...)` untu
 
 - **UUID Fields**: Beberapa tabel menggunakan UUID sebagai primary key (universally unique identifier)
 - **Timestamps**: Hampir semua tabel memiliki `created_at` dan `updated_at` fields untuk audit trail
-- **Soft Delete**: Tidak ada kolom `deleted_at` yang terlihat, jadi tidak ada soft delete
+- **Soft Delete**: Beberapa tabel master operasional seperti `warehouses` dan `warehouse_locations` menggunakan `deleted_at`
 - **Morphable Relations**: Beberapa tabel menggunakan polymorphic relationships
 - **Cascading Deletes**: Foreign keys tertentu dihapus secara cascade untuk memastikan referential integrity
 - **Multi-Store**: Sistem mendukung multi-toko/cabang dengan field `store_id`

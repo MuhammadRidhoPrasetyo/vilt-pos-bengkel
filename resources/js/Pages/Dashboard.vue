@@ -252,6 +252,38 @@ const links = computed(() => [
             },
         },
         {
+            label: 'Master Data',
+            icon: 'i-lucide-database',
+            onSelect: () => {
+                open.value = false;
+                router.visit('/master-data');
+            },
+        },
+        {
+            label: 'Users',
+            icon: 'i-lucide-users',
+            onSelect: () => {
+                open.value = false;
+                router.visit('/users');
+            },
+        },
+        {
+            label: 'Roles',
+            icon: 'i-lucide-shield',
+            onSelect: () => {
+                open.value = false;
+                router.visit('/roles');
+            },
+        },
+        {
+            label: 'Permissions',
+            icon: 'i-lucide-key-round',
+            onSelect: () => {
+                open.value = false;
+                router.visit('/permissions');
+            },
+        },
+        {
             label: 'Inbox',
             icon: 'i-lucide-inbox',
             badge: '4',
