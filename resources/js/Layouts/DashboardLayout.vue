@@ -7,7 +7,7 @@ import { computed, ref, watch } from 'vue';
 defineProps({
     title: {
         type: String,
-        default: 'Home',
+        default: 'Beranda',
     },
     panelId: {
         type: String,
@@ -71,7 +71,7 @@ const teams = ref([
         },
     },
     {
-        label: 'Access Management',
+        label: 'Manajemen Akses',
         avatar: {
             icon: 'i-lucide-shield-check',
         },
@@ -106,21 +106,21 @@ const userItems = computed(() => [
     ],
     [
         {
-            label: 'Profile',
+            label: 'Profil',
             icon: 'i-lucide-user',
         },
         {
-            label: 'Settings',
+            label: 'Pengaturan',
             icon: 'i-lucide-settings',
         },
     ],
     [
         {
-            label: 'Theme',
+            label: 'Tema',
             icon: 'i-lucide-palette',
             children: [
                 {
-                    label: 'Primary',
+                    label: 'Warna Utama',
                     slot: 'chip',
                     chip: primaryColor.value,
                     children: ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'].map((color) => ({
@@ -136,7 +136,7 @@ const userItems = computed(() => [
                     })),
                 },
                 {
-                    label: 'Neutral',
+                    label: 'Warna Netral',
                     slot: 'chip',
                     chip: neutralColor.value === 'neutral' ? 'old-neutral' : neutralColor.value,
                     children: ['slate', 'gray', 'zinc', 'neutral', 'stone'].map((color) => ({
@@ -154,11 +154,11 @@ const userItems = computed(() => [
             ],
         },
         {
-            label: 'Appearance',
+            label: 'Tampilan',
             icon: 'i-lucide-sun-moon',
             children: [
                 {
-                    label: 'Light',
+                    label: 'Terang',
                     icon: 'i-lucide-sun',
                     type: 'checkbox',
                     checked: appearance.value === 'light',
@@ -168,7 +168,7 @@ const userItems = computed(() => [
                     },
                 },
                 {
-                    label: 'Dark',
+                    label: 'Gelap',
                     icon: 'i-lucide-moon',
                     type: 'checkbox',
                     checked: appearance.value === 'dark',
@@ -182,7 +182,7 @@ const userItems = computed(() => [
     ],
     [
         {
-            label: 'Log out',
+            label: 'Keluar',
             icon: 'i-lucide-log-out',
             onSelect: () => router.post('/logout'),
         },
@@ -199,96 +199,89 @@ const navigateTo = (path) => {
 const links = computed(() => [
     [
         {
-            label: 'Home',
+            label: 'Beranda',
             icon: 'i-lucide-house',
             active: currentPath.value === '/home',
             onSelect: () => navigateTo('/home'),
         },
         {
-            label: 'Master Data',
+            label: 'Data Master',
             icon: 'i-lucide-database',
-            onSelect: () => navigateTo('/master-data'),
+            active: currentPath.value.startsWith('/stores')
+                || currentPath.value.startsWith('/partners')
+                || currentPath.value.startsWith('/partner-roles')
+                || currentPath.value.startsWith('/discount-types')
+                || currentPath.value.startsWith('/brands')
+                || currentPath.value.startsWith('/units')
+                || currentPath.value.startsWith('/attributes')
+                || currentPath.value.startsWith('/payments')
+                || currentPath.value.startsWith('/cash-flow-categories'),
+            defaultOpen: currentPath.value.startsWith('/stores')
+                || currentPath.value.startsWith('/partners')
+                || currentPath.value.startsWith('/partner-roles')
+                || currentPath.value.startsWith('/discount-types')
+                || currentPath.value.startsWith('/brands')
+                || currentPath.value.startsWith('/units')
+                || currentPath.value.startsWith('/attributes')
+                || currentPath.value.startsWith('/payments')
+                || currentPath.value.startsWith('/cash-flow-categories'),
+            type: 'trigger',
+            children: [
+                {
+                    label: 'Toko',
+                    onSelect: () => navigateTo('/stores'),
+                },
+                {
+                    label: 'Mitra',
+                    onSelect: () => navigateTo('/partners'),
+                },
+                {
+                    label: 'Role Partner',
+                    onSelect: () => navigateTo('/partner-roles'),
+                },
+                {
+                    label: 'Jenis Diskon',
+                    onSelect: () => navigateTo('/discount-types'),
+                },
+                {
+                    label: 'Merek',
+                    onSelect: () => navigateTo('/brands'),
+                },
+                {
+                    label: 'Satuan',
+                    onSelect: () => navigateTo('/units'),
+                },
+                {
+                    label: 'Atribut',
+                    onSelect: () => navigateTo('/attributes'),
+                },
+                {
+                    label: 'Pembayaran',
+                    onSelect: () => navigateTo('/payments'),
+                },
+                {
+                    label: 'Kategori Arus Kas',
+                    onSelect: () => navigateTo('/cash-flow-categories'),
+                },
+            ],
         },
         {
-            label: 'Users',
+            label: 'Pengguna',
             icon: 'i-lucide-users',
             active: currentPath.value.startsWith('/users'),
             onSelect: () => navigateTo('/users'),
         },
         {
-            label: 'Roles',
+            label: 'Peran',
             icon: 'i-lucide-shield',
             active: currentPath.value.startsWith('/roles'),
             onSelect: () => navigateTo('/roles'),
         },
         {
-            label: 'Permissions',
+            label: 'Hak Akses',
             icon: 'i-lucide-key-round',
             active: currentPath.value.startsWith('/permissions'),
             onSelect: () => navigateTo('/permissions'),
-        },
-        {
-            label: 'Inbox',
-            icon: 'i-lucide-inbox',
-            badge: '4',
-            onSelect: () => {
-                open.value = false;
-            },
-        },
-        {
-            label: 'Customers',
-            icon: 'i-lucide-users',
-            onSelect: () => {
-                open.value = false;
-            },
-        },
-        {
-            label: 'Settings',
-            icon: 'i-lucide-settings',
-            defaultOpen: true,
-            type: 'trigger',
-            children: [
-                {
-                    label: 'General',
-                    onSelect: () => {
-                        open.value = false;
-                    },
-                },
-                {
-                    label: 'Members',
-                    onSelect: () => {
-                        open.value = false;
-                    },
-                },
-                {
-                    label: 'Notifications',
-                    onSelect: () => {
-                        open.value = false;
-                    },
-                },
-                {
-                    label: 'Security',
-                    onSelect: () => {
-                        open.value = false;
-                    },
-                },
-            ],
-        },
-    ],
-    [
-        {
-            label: 'Feedback',
-            icon: 'i-lucide-message-circle',
-            onSelect: () => {
-                open.value = false;
-            },
-        },
-        {
-            label: 'Help & Support',
-            icon: 'i-lucide-info',
-            onSelect: () => {
-                open.value = false;
-            },
         },
     ],
 ]);
@@ -296,30 +289,10 @@ const links = computed(() => [
 const searchGroups = computed(() => [
     {
         id: 'links',
-        label: 'Go to',
+        label: 'Navigasi',
         items: links.value.flat(),
     },
 ]);
-
-const actionItems = [
-    [
-        {
-            label: 'New user',
-            icon: 'i-lucide-user-plus',
-            onSelect: () => router.visit('/users/create'),
-        },
-        {
-            label: 'New role',
-            icon: 'i-lucide-shield-plus',
-            onSelect: () => router.visit('/roles'),
-        },
-        {
-            label: 'New permission',
-            icon: 'i-lucide-key-round',
-            onSelect: () => router.visit('/permissions'),
-        },
-    ],
-];
 
 const flash = computed(() => page.props.flash || {});
 
@@ -351,12 +324,12 @@ const notifications = [
         unread: true,
         date: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
         sender: {
-            name: 'System',
+            name: 'Sistem',
             avatar: {
                 icon: 'i-lucide-bell',
             },
         },
-        body: 'Access management module is ready.',
+        body: 'Modul manajemen akses siap digunakan.',
     },
     {
         id: 2,
@@ -368,7 +341,7 @@ const notifications = [
                 icon: 'i-lucide-badge-dollar-sign',
             },
         },
-        body: 'Dashboard layout is shared across pages.',
+        body: 'Layout dashboard digunakan bersama di semua halaman.',
     },
 ];
 
@@ -429,13 +402,6 @@ const formatTimeAgo = (date) => {
                     popover
                 />
 
-                <UNavigationMenu
-                    :collapsed="collapsed"
-                    :items="links[1]"
-                    orientation="vertical"
-                    tooltip
-                    class="mt-auto"
-                />
             </template>
 
             <template #footer="{ collapsed }">
@@ -484,7 +450,7 @@ const formatTimeAgo = (date) => {
 
                     <template #right>
                         <slot name="navbar-right">
-                            <UTooltip text="Notifications" :shortcuts="['N']">
+                            <UTooltip text="Notifikasi" :shortcuts="['N']">
                                 <UButton color="neutral" variant="ghost" square @click="notificationsOpen = true">
                                     <UChip color="error" inset>
                                         <UIcon name="i-lucide-bell" class="size-5 shrink-0" />
@@ -511,7 +477,7 @@ const formatTimeAgo = (date) => {
             </template>
         </UDashboardPanel>
 
-        <USlideover v-model:open="notificationsOpen" title="Notifications">
+        <USlideover v-model:open="notificationsOpen" title="Notifikasi">
             <template #body>
                 <button
                     v-for="notification in notifications"
