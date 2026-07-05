@@ -13,6 +13,10 @@ defineProps({
         type: String,
         default: 'default',
     },
+    navbarAction: {
+        type: Object,
+        default: null,
+    },
 });
 
 const page = usePage();
@@ -488,9 +492,14 @@ const formatTimeAgo = (date) => {
                                 </UButton>
                             </UTooltip>
 
-                            <UDropdownMenu :items="actionItems">
-                                <UButton icon="i-lucide-plus" size="md" class="rounded-full" />
-                            </UDropdownMenu>
+                            <UButton
+                                v-if="navbarAction"
+                                :icon="navbarAction.icon"
+                                :label="navbarAction.label"
+                                :color="navbarAction.color || 'primary'"
+                                :variant="navbarAction.variant || 'solid'"
+                                @click="navbarAction.onClick"
+                            />
                         </slot>
                     </template>
                 </UDashboardNavbar>

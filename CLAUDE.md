@@ -186,4 +186,11 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
+=== spatie/laravel-medialibrary rules ===
+
+## Media Library
+
+- `spatie/laravel-medialibrary` associates files with Eloquent models, with support for collections, conversions, and responsive images.
+- Always activate the `medialibrary-development` skill when working with media uploads, conversions, collections, responsive images, or any code that uses the `HasMedia` interface or `InteractsWithMedia` trait.
+
 </laravel-boost-guidelines>

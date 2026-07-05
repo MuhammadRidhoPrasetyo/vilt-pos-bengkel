@@ -30,7 +30,5 @@ const submit = () => {
 </script>
 
 <template>
-    <div class="max-w-4xl rounded-lg border border-default p-5">
-        <UserForm :form="form" :roles="roles.data" submit-label="Buat User" require-password @submit="submit" />
-    </div>
+    <UserForm :form="form" :roles="roles.data" submit-label="Buat User" require-password @submit="submit" />
 </template>

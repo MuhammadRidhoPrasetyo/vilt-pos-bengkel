@@ -1,7 +1,8 @@
 <script setup>
 import UserForm from '../../Components/UserForm.vue';
 import DashboardLayout from '../../Layouts/DashboardLayout.vue';
-import { useForm } from '@inertiajs/vue3';
+import { router, setLayoutProps, useForm } from '@inertiajs/vue3';
+import { onUnmounted } from 'vue';
 
 defineOptions({
     layout: [DashboardLayout, { title: 'Edit User', panelId: 'users-edit' }],
@@ -28,10 +29,22 @@ const form = useForm({
 const submit = () => {
     form.put(`/users/${props.user.data.id}`);
 };
+
+setLayoutProps({
+    navbarAction: {
+        label: 'Kembali',
+        icon: 'i-lucide-arrow-left',
+        color: 'neutral',
+        variant: 'outline',
+        onClick: () => router.visit('/users'),
+    },
+});
+
+onUnmounted(() => {
+    setLayoutProps({ navbarAction: null });
+});
 </script>
 
 <template>
-    <div class="max-w-4xl rounded-lg border border-default p-5">
-        <UserForm :form="form" :roles="roles.data" submit-label="Simpan Perubahan" @submit="submit" />
-    </div>
+    <UserForm :form="form" :roles="roles.data" submit-label="Simpan Perubahan" :show-cancel="false" @submit="submit" />
 </template>
