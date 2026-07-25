@@ -20,6 +20,10 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    cancelLabel: {
+        type: String,
+        default: 'Batal',
+    },
 });
 
 defineEmits(['submit']);
@@ -69,13 +73,13 @@ const clearRoles = () => {
 <template>
     <form class="space-y-6" @submit.prevent="$emit('submit')">
         <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.72fr)]">
-            <UCard :ui="{ body: 'p-5!' }">
-                <div class="space-y-5">
-                    <div>
-                        <h2 class="text-base font-semibold text-highlighted">Data Diri User</h2>
-                        <p class="text-sm text-muted">Informasi profil dan kredensial user.</p>
-                    </div>
+            <UCard :ui="{ body: 'p-0!' }">
+                <div class="border-b border-default p-5">
+                    <h2 class="text-base font-semibold text-highlighted">Data Diri User</h2>
+                    <p class="text-sm text-muted">Informasi profil dan kredensial user.</p>
+                </div>
 
+                <div class="space-y-5 p-5">
                     <div class="grid gap-4 md:grid-cols-2">
                         <label class="grid gap-1 text-sm">
                             <span class="font-medium">Nama</span>
@@ -193,7 +197,7 @@ const clearRoles = () => {
         </div>
 
         <div class="flex justify-end gap-2">
-            <Link v-if="showCancel" href="/users" class="rounded-md border border-default px-4 py-2 text-sm hover:bg-elevated">Batal</Link>
+            <Link v-if="showCancel" href="/users" class="rounded-md border border-default px-4 py-2 text-sm hover:bg-elevated">{{ cancelLabel }}</Link>
             <button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 disabled:opacity-60" type="submit" :disabled="form.processing">
                 {{ submitLabel }}
             </button>

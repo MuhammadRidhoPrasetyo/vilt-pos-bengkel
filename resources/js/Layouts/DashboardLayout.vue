@@ -266,6 +266,50 @@ const links = computed(() => [
             ],
         },
         {
+            label: 'Produk',
+            icon: 'i-lucide-package',
+            active: currentPath.value.startsWith('/product-categories')
+                || currentPath.value.startsWith('/products')
+                || currentPath.value.startsWith('/product-variants'),
+            defaultOpen: currentPath.value.startsWith('/product-categories')
+                || currentPath.value.startsWith('/products')
+                || currentPath.value.startsWith('/product-variants'),
+            type: 'trigger',
+            children: [
+                {
+                    label: 'Kategori Produk',
+                    onSelect: () => navigateTo('/product-categories'),
+                },
+                {
+                    label: 'Produk',
+                    onSelect: () => navigateTo('/products'),
+                },
+                {
+                    label: 'Varian Produk',
+                    onSelect: () => navigateTo('/product-variants'),
+                },
+            ],
+        },
+        {
+            label: 'Gudang',
+            icon: 'i-lucide-warehouse',
+            active: currentPath.value.startsWith('/warehouses')
+                || currentPath.value.startsWith('/warehouse-locations'),
+            defaultOpen: currentPath.value.startsWith('/warehouses')
+                || currentPath.value.startsWith('/warehouse-locations'),
+            type: 'trigger',
+            children: [
+                {
+                    label: 'Warehouse',
+                    onSelect: () => navigateTo('/warehouses'),
+                },
+                {
+                    label: 'Lokasi Warehouse',
+                    onSelect: () => navigateTo('/warehouse-locations'),
+                },
+            ],
+        },
+        {
             label: 'Pengguna',
             icon: 'i-lucide-users',
             active: currentPath.value.startsWith('/users'),

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateAttributeRequest;
 use App\Http\Resources\AttributeResource;
 use App\Models\Attribute;
 use App\Repositories\AttributeRepository;
+use App\Repositories\StoreRepository;
 use App\Services\AttributeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class AttributeController extends Controller
 {
     public function __construct(
         private readonly AttributeRepository $attributes,
+        private readonly StoreRepository $stores,
         private readonly AttributeService $service
     ) {}
 
@@ -25,6 +27,9 @@ class AttributeController extends Controller
         return Inertia::render('attributes/index', [
             'records' => AttributeResource::collection($this->attributes->paginate($request->string('search')->toString())),
             'filters' => ['search' => $request->string('search')->toString()],
+            'options' => [
+                'stores' => $this->stores->options()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
+            ],
             'config' => [
                 'title' => 'Attributes',
                 'singular' => 'Attribute',
@@ -32,6 +37,7 @@ class AttributeController extends Controller
                 'searchPlaceholder' => 'Cari attribute',
                 'defaults' => ['options' => []],
                 'fields' => [
+                    ['name' => 'store_id', 'label' => 'Store', 'type' => 'select', 'optionKey' => 'stores', 'table' => true, 'displayKey' => 'store.name'],
                     ['name' => 'name', 'label' => 'Nama', 'required' => true, 'table' => true],
                     ['name' => 'options', 'label' => 'Opsi', 'type' => 'tags', 'table' => true],
                 ],

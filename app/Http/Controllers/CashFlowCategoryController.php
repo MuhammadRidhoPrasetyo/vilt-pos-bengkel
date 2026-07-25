@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCashFlowCategoryRequest;
 use App\Http\Resources\CashFlowCategoryResource;
 use App\Models\CashFlowCategory;
 use App\Repositories\CashFlowCategoryRepository;
+use App\Repositories\StoreRepository;
 use App\Services\CashFlowCategoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class CashFlowCategoryController extends Controller
 {
     public function __construct(
         private readonly CashFlowCategoryRepository $cashFlowCategories,
+        private readonly StoreRepository $stores,
         private readonly CashFlowCategoryService $service
     ) {}
 
@@ -25,6 +27,9 @@ class CashFlowCategoryController extends Controller
         return Inertia::render('cash-flow-categories/index', [
             'records' => CashFlowCategoryResource::collection($this->cashFlowCategories->paginate($request->string('search')->toString())),
             'filters' => ['search' => $request->string('search')->toString()],
+            'options' => [
+                'stores' => $this->stores->options()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
+            ],
             'config' => [
                 'title' => 'Cash Flow Categories',
                 'singular' => 'Cash Flow Category',
@@ -32,6 +37,7 @@ class CashFlowCategoryController extends Controller
                 'searchPlaceholder' => 'Cari kategori cash flow',
                 'defaults' => ['type' => 'expense', 'is_active' => true, 'is_system' => false],
                 'fields' => [
+                    ['name' => 'store_id', 'label' => 'Store', 'type' => 'select', 'optionKey' => 'stores', 'table' => true, 'displayKey' => 'store.name'],
                     ['name' => 'name', 'label' => 'Nama', 'required' => true, 'table' => true],
                     ['name' => 'type', 'label' => 'Tipe', 'type' => 'select', 'required' => true, 'table' => true, 'options' => [['label' => 'Income', 'value' => 'income'], ['label' => 'Expense', 'value' => 'expense']]],
                     ['name' => 'description', 'label' => 'Deskripsi', 'type' => 'textarea', 'table' => true],

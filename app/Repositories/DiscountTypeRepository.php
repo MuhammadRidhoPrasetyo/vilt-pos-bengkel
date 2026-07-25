@@ -10,6 +10,7 @@ class DiscountTypeRepository
     public function paginate(?string $search = null): LengthAwarePaginator
     {
         return DiscountType::query()
+            ->with('store:id,name')
             ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%"))
             ->latest()
             ->paginate(10)

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateBrandRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;
 use App\Repositories\BrandRepository;
+use App\Repositories\StoreRepository;
 use App\Services\BrandService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class BrandController extends Controller
 {
     public function __construct(
         private readonly BrandRepository $brands,
+        private readonly StoreRepository $stores,
         private readonly BrandService $service
     ) {}
 
@@ -25,12 +27,16 @@ class BrandController extends Controller
         return Inertia::render('brands/index', [
             'records' => BrandResource::collection($this->brands->paginate($request->string('search')->toString())),
             'filters' => ['search' => $request->string('search')->toString()],
+            'options' => [
+                'stores' => $this->stores->options()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
+            ],
             'config' => [
                 'title' => 'Brands',
                 'singular' => 'Brand',
                 'route' => '/brands',
                 'searchPlaceholder' => 'Cari brand',
                 'fields' => [
+                    ['name' => 'store_id', 'label' => 'Store', 'type' => 'select', 'optionKey' => 'stores', 'table' => true, 'displayKey' => 'store.name'],
                     ['name' => 'name', 'label' => 'Nama', 'required' => true, 'table' => true],
                 ],
             ],

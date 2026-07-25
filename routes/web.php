@@ -8,10 +8,15 @@ use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PartnerRoleController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\WarehouseLocationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -33,6 +38,11 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('attributes', AttributeController::class);
     Route::resource('payments', PaymentController::class);
     Route::resource('cash-flow-categories', CashFlowCategoryController::class);
+    Route::resource('product-categories', ProductCategoryController::class);
+    Route::resource('products', ProductController::class);
+    Route::resource('product-variants', ProductVariantController::class);
+    Route::resource('warehouses', WarehouseController::class);
+    Route::resource('warehouse-locations', WarehouseLocationController::class);
     Route::resource('roles', RoleController::class);
     Route::resource('permissions', PermissionController::class);
     Route::resource('users', UserController::class);

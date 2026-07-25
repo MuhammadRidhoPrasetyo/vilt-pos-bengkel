@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePaymentRequest;
 use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Repositories\PaymentRepository;
+use App\Repositories\StoreRepository;
 use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class PaymentController extends Controller
 {
     public function __construct(
         private readonly PaymentRepository $payments,
+        private readonly StoreRepository $stores,
         private readonly PaymentService $service
     ) {}
 
@@ -25,12 +27,16 @@ class PaymentController extends Controller
         return Inertia::render('payments/index', [
             'records' => PaymentResource::collection($this->payments->paginate($request->string('search')->toString())),
             'filters' => ['search' => $request->string('search')->toString()],
+            'options' => [
+                'stores' => $this->stores->options()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
+            ],
             'config' => [
                 'title' => 'Payments',
                 'singular' => 'Payment',
                 'route' => '/payments',
                 'searchPlaceholder' => 'Cari payment',
                 'fields' => [
+                    ['name' => 'store_id', 'label' => 'Store', 'type' => 'select', 'optionKey' => 'stores', 'table' => true, 'displayKey' => 'store.name'],
                     ['name' => 'name', 'label' => 'Nama', 'required' => true, 'table' => true],
                     ['name' => 'type', 'label' => 'Tipe', 'table' => true],
                     ['name' => 'account_number', 'label' => 'No. Akun', 'table' => true],

@@ -1,7 +1,6 @@
 <script setup>
 import DashboardLayout from '../../Layouts/DashboardLayout.vue';
-import { Link, router, setLayoutProps } from '@inertiajs/vue3';
-import { onUnmounted } from 'vue';
+import { Link } from '@inertiajs/vue3';
 
 defineOptions({
     layout: [DashboardLayout, { title: 'Detail User', panelId: 'users-show' }],
@@ -9,20 +8,6 @@ defineOptions({
 
 defineProps({
     user: Object,
-});
-
-setLayoutProps({
-    navbarAction: {
-        label: 'Kembali',
-        icon: 'i-lucide-arrow-left',
-        color: 'neutral',
-        variant: 'outline',
-        onClick: () => router.visit('/users'),
-    },
-});
-
-onUnmounted(() => {
-    setLayoutProps({ navbarAction: null });
 });
 </script>
 
@@ -33,10 +18,16 @@ onUnmounted(() => {
                 <h2 class="text-xl font-semibold">{{ user.data.name }}</h2>
                 <p class="text-sm text-muted">{{ user.data.email }}</p>
             </div>
-            <Link :href="`/users/${user.data.id}/edit`" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
-                <UIcon name="i-lucide-pencil" class="size-4" />
-                Edit
-            </Link>
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <Link href="/users" class="inline-flex items-center justify-center gap-2 rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated">
+                    <UIcon name="i-lucide-arrow-left" class="size-4" />
+                    Kembali
+                </Link>
+                <Link :href="`/users/${user.data.id}/edit`" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
+                    <UIcon name="i-lucide-pencil" class="size-4" />
+                    Edit
+                </Link>
+            </div>
         </div>
 
         <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.6fr)]">

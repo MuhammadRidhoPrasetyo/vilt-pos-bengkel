@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePaymentRequest extends FormRequest
 {
@@ -17,6 +18,7 @@ class StorePaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'store_id' => ['nullable', 'uuid', Rule::exists('stores', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'account_number' => ['nullable', 'string', 'max:255'],

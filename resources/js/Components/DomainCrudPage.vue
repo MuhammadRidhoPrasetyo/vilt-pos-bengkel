@@ -29,7 +29,6 @@ const UBadge = resolveComponent('UBadge');
 const fields = computed(() => props.config?.fields || []);
 const tableFields = computed(() => fields.value.filter((field) => field.table));
 const selectedRowsCount = computed(() => Object.keys(rowSelection.value).length);
-const form = useForm({});
 
 const displayColumnItems = computed(() => [
     [
@@ -61,11 +60,21 @@ const displayColumnItems = computed(() => [
 ]);
 
 const optionItems = (field) => {
+    let items = [];
     if (field.optionKey) {
-        return props.options?.[field.optionKey] || [];
+        items = props.options?.[field.optionKey] || [];
+    } else {
+        items = field.options || [];
     }
 
-    return field.options || [];
+    if (field.name === 'store_id') {
+        const hasGlobalOption = items.some((item) => item.value === '' || item.value === null);
+        if (!hasGlobalOption) {
+            return [{ label: 'Global (Semua Toko)', value: '' }, ...items];
+        }
+    }
+
+    return items;
 };
 
 const getNestedValue = (record, path) => {
@@ -109,6 +118,8 @@ const initialForm = () => {
         return values;
     }, {});
 };
+
+const form = useForm(initialForm());
 
 const setFormValues = (values) => {
     Object.entries(values).forEach(([key, value]) => {
@@ -285,6 +296,11 @@ watch(search, (value) => {
 watch(() => props.records?.data, () => {
     rowSelection.value = {};
 });
+
+watch(fields, () => {
+    form.defaults(initialForm());
+    form.reset();
+}, { immediate: true });
 </script>
 
 <template>
@@ -378,7 +394,7 @@ watch(() => props.records?.data, () => {
                 </div>
 
                 <form v-else class="mt-5 grid gap-4 sm:grid-cols-2" @submit.prevent="submit">
-                    <label
+                    <div
                         v-for="field in fields"
                         :key="field.name"
                         class="grid gap-1 text-sm"
@@ -401,10 +417,10 @@ watch(() => props.records?.data, () => {
                             :placeholder="`Pilih ${field.label}`"
                         />
 
-                        <div v-else-if="field.type === 'checkbox'" class="flex items-center gap-3 rounded-md border border-default px-3 py-2">
-                            <UCheckbox v-model="form[field.name]" :aria-label="field.label" />
+                        <label v-else-if="field.type === 'checkbox'" class="flex items-center gap-3 rounded-md border border-default px-3 py-2">
+                            <input v-model="form[field.name]" class="size-4" type="checkbox" />
                             <span class="text-muted">{{ form[field.name] ? 'Aktif' : 'Tidak aktif' }}</span>
-                        </div>
+                        </label>
 
                         <div v-else-if="field.type === 'multiselect'" class="grid gap-2 rounded-md border border-default p-3 sm:grid-cols-2">
                             <label v-for="item in optionItems(field)" :key="item.value" class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-elevated">
@@ -447,7 +463,7 @@ watch(() => props.records?.data, () => {
                         />
 
                         <span v-if="form.errors[field.name]" class="text-xs text-red-600">{{ form.errors[field.name] }}</span>
-                    </label>
+                    </div>
 
                     <div class="flex justify-end gap-2 sm:col-span-2">
                         <button class="rounded-md border border-default px-4 py-2 text-sm hover:bg-elevated" type="button" @click="closeModal">Batal</button>

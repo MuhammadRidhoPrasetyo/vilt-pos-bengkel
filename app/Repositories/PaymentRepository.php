@@ -10,6 +10,7 @@ class PaymentRepository
     public function paginate(?string $search = null): LengthAwarePaginator
     {
         return Payment::query()
+            ->with('store:id,name')
             ->when($search, fn ($query) => $query->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('type', 'like', "%{$search}%")

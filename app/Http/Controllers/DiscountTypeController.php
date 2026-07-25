@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateDiscountTypeRequest;
 use App\Http\Resources\DiscountTypeResource;
 use App\Models\DiscountType;
 use App\Repositories\DiscountTypeRepository;
+use App\Repositories\StoreRepository;
 use App\Services\DiscountTypeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class DiscountTypeController extends Controller
 {
     public function __construct(
         private readonly DiscountTypeRepository $discountTypes,
+        private readonly StoreRepository $stores,
         private readonly DiscountTypeService $service
     ) {}
 
@@ -25,12 +27,16 @@ class DiscountTypeController extends Controller
         return Inertia::render('discount-types/index', [
             'records' => DiscountTypeResource::collection($this->discountTypes->paginate($request->string('search')->toString())),
             'filters' => ['search' => $request->string('search')->toString()],
+            'options' => [
+                'stores' => $this->stores->options()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
+            ],
             'config' => [
                 'title' => 'Discount Types',
                 'singular' => 'Discount Type',
                 'route' => '/discount-types',
                 'searchPlaceholder' => 'Cari discount type',
                 'fields' => [
+                    ['name' => 'store_id', 'label' => 'Store', 'type' => 'select', 'optionKey' => 'stores', 'table' => true, 'displayKey' => 'store.name'],
                     ['name' => 'name', 'label' => 'Nama', 'required' => true, 'table' => true],
                     ['name' => 'description', 'label' => 'Deskripsi', 'type' => 'textarea', 'table' => true],
                 ],

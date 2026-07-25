@@ -10,6 +10,7 @@ class CashFlowCategoryRepository
     public function paginate(?string $search = null): LengthAwarePaginator
     {
         return CashFlowCategory::query()
+            ->with('store:id,name')
             ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%"))
             ->latest()
             ->paginate(10)

@@ -26,6 +26,7 @@ class StoreCashFlowCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'store_id' => ['nullable', 'uuid', Rule::exists('stores', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::in(['income', 'expense'])],
             'description' => ['nullable', 'string', 'max:255'],
