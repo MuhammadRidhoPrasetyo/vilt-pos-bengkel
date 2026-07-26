@@ -51,13 +51,33 @@ class ProductVariantController extends Controller
     {
         $this->service->create($request->validated());
 
-        return redirect()->route('product-variants.index')->with('success', 'Varian produk berhasil dibuat.');
+        return redirect()->to(url()->previous(route('product-variants.index')))->with('success', 'Varian produk berhasil dibuat.');
     }
 
     public function show(ProductVariant $productVariant): Response
     {
+        $productVariant->load([
+            'product:id,name,receipt_name,product_category_id,brand_id,unit_id',
+            'product.category:id,name',
+            'product.brand:id,name',
+            'product.unit:id,name',
+            'product.media',
+            'attributeOptions:id,attribute_id,value',
+            'attributeOptions.attribute:id,name',
+            'media',
+        ]);
+
         return Inertia::render('product-variants/show', [
-            'productVariant' => ProductVariantResource::make($productVariant->load(['product:id,name', 'attributeOptions:id,attribute_id,value', 'attributeOptions.attribute:id,name'])),
+            'productVariant' => ProductVariantResource::make($productVariant),
+            'products' => $this->products->options()->map(fn ($product) => ['label' => $product->name, 'value' => $product->id])->values(),
+            'attributes' => $this->attributes->options()->map(fn ($attribute) => [
+                'id' => $attribute->id,
+                'name' => $attribute->name,
+                'options' => $attribute->options->map(fn ($option) => [
+                    'id' => $option->id,
+                    'value' => $option->value,
+                ])->values(),
+            ])->values(),
         ]);
     }
 
@@ -81,7 +101,7 @@ class ProductVariantController extends Controller
     {
         $this->service->update($productVariant, $request->validated());
 
-        return redirect()->route('product-variants.index')->with('success', 'Varian produk berhasil diperbarui.');
+        return redirect()->to(url()->previous(route('product-variants.index')))->with('success', 'Varian produk berhasil diperbarui.');
     }
 
     public function destroy(ProductVariant $productVariant): RedirectResponse

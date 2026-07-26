@@ -284,10 +284,6 @@ const links = computed(() => [
                     label: 'Produk',
                     onSelect: () => navigateTo('/products'),
                 },
-                {
-                    label: 'Varian Produk',
-                    onSelect: () => navigateTo('/product-variants'),
-                },
             ],
         },
         {

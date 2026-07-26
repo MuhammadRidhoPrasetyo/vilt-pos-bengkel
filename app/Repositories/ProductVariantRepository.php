@@ -10,7 +10,7 @@ class ProductVariantRepository
     public function paginate(?string $search = null): LengthAwarePaginator
     {
         return ProductVariant::query()
-            ->with(['product:id,name', 'attributeOptions:id,attribute_id,value', 'attributeOptions.attribute:id,name'])
+            ->with(['product:id,name,receipt_name', 'product.media', 'attributeOptions:id,attribute_id,value', 'attributeOptions.attribute:id,name', 'media'])
             ->when($search, function ($query) use ($search) {
                 $query->where('sku', 'like', "%{$search}%")
                     ->orWhere('barcode', 'like', "%{$search}%")

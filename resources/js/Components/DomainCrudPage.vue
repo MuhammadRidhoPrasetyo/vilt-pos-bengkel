@@ -1,5 +1,6 @@
 <script setup>
 import DeleteConfirmationModal from './DeleteConfirmationModal.vue';
+import MultiImageUploader from './MultiImageUploader.vue';
 import PaginationLinks from './PaginationLinks.vue';
 import { router, useForm } from '@inertiajs/vue3';
 import { computed, h, ref, resolveComponent, watch } from 'vue';
@@ -106,17 +107,22 @@ const displayValue = (record, field) => {
 const initialForm = () => {
     const defaults = props.config?.defaults || {};
 
-    return fields.value.reduce((values, field) => {
+    const values = fields.value.reduce((acc, field) => {
         if (field.type === 'checkbox') {
-            values[field.name] = defaults[field.name] ?? false;
-        } else if (field.type === 'tags' || field.type === 'multiselect') {
-            values[field.name] = defaults[field.name] ?? [];
+            acc[field.name] = defaults[field.name] ?? false;
+        } else if (field.type === 'tags' || field.type === 'multiselect' || field.type === 'image_gallery') {
+            acc[field.name] = defaults[field.name] ?? [];
         } else {
-            values[field.name] = defaults[field.name] ?? '';
+            acc[field.name] = defaults[field.name] ?? '';
         }
 
-        return values;
+        return acc;
     }, {});
+
+    values.images = [];
+    values.delete_media_ids = [];
+
+    return values;
 };
 
 const form = useForm(initialForm());
@@ -159,11 +165,17 @@ const openEdit = (record) => {
 
         return values;
     }, {}));
+    form.images = [];
+    form.delete_media_ids = [];
     tagInputs.value = {};
     modalMode.value = 'edit';
 };
 
 const openShow = (record) => {
+    if (props.config?.route) {
+        router.visit(`${props.config.route}/${record.id}`);
+        return;
+    }
     selectedRecord.value = record;
     modalMode.value = 'show';
 };
@@ -179,7 +191,10 @@ const submit = () => {
     };
 
     if (modalMode.value === 'edit') {
-        form.put(`${props.config.route}/${selectedRecord.value.id}`, options);
+        form.transform((data) => ({
+            ...data,
+            _method: 'put',
+        })).post(`${props.config.route}/${selectedRecord.value.id}`, options);
         return;
     }
 
@@ -398,12 +413,22 @@ watch(fields, () => {
                         v-for="field in fields"
                         :key="field.name"
                         class="grid gap-1 text-sm"
-                        :class="field.type === 'textarea' || field.type === 'tags' || field.type === 'multiselect' ? 'sm:col-span-2' : ''"
+                        :class="field.type === 'textarea' || field.type === 'tags' || field.type === 'multiselect' || field.type === 'image_gallery' ? 'sm:col-span-2' : ''"
                     >
-                        <span class="font-medium">{{ field.label }}</span>
+                        <span v-if="field.type !== 'image_gallery'" class="font-medium">{{ field.label }}</span>
+
+                        <div v-if="field.type === 'image_gallery'" class="sm:col-span-2">
+                            <MultiImageUploader
+                                v-model="form.images"
+                                v-model:delete-media-ids="form.delete_media_ids"
+                                :existing-media="selectedRecord?.images || []"
+                                :label="field.label"
+                                :description="field.description || 'Upload satu atau beberapa gambar.'"
+                            />
+                        </div>
 
                         <textarea
-                            v-if="field.type === 'textarea'"
+                            v-else-if="field.type === 'textarea'"
                             v-model="form[field.name]"
                             class="min-h-24 rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary"
                             :required="field.required"

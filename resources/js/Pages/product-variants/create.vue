@@ -17,10 +17,13 @@ const form = useForm({
     sku: '',
     barcode: '',
     name_suffix: '',
+    receipt_name: '',
     default_purchase_price: 0,
     default_selling_price: 0,
     is_active: true,
     attribute_option_ids: [],
+    images: [],
+    delete_media_ids: [],
 });
 
 const submit = () => {

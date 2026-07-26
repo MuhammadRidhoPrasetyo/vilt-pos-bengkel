@@ -34,6 +34,7 @@ defineProps({
                             <th class="px-4 py-3 text-left text-sm font-medium">SKU</th>
                             <th class="px-4 py-3 text-left text-sm font-medium">Barcode</th>
                             <th class="px-4 py-3 text-left text-sm font-medium">Nama Tambahan</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium">Nama Struk</th>
                             <th class="px-4 py-3 text-left text-sm font-medium">Atribut</th>
                             <th class="px-4 py-3 text-left text-sm font-medium">Status</th>
                             <th class="px-4 py-3 text-right text-sm font-medium">Aksi</th>
@@ -45,6 +46,7 @@ defineProps({
                             <td class="px-4 py-3 text-sm">{{ variant.sku || '-' }}</td>
                             <td class="px-4 py-3 text-sm">{{ variant.barcode || '-' }}</td>
                             <td class="px-4 py-3 text-sm">{{ variant.name_suffix || '-' }}</td>
+                            <td class="px-4 py-3 text-sm">{{ variant.display_receipt_name || '-' }}</td>
                             <td class="px-4 py-3 text-sm">{{ (variant.attribute_option_labels || []).join(', ') || '-' }}</td>
                             <td class="px-4 py-3 text-sm">{{ variant.is_active ? 'Aktif' : 'Nonaktif' }}</td>
                             <td class="px-4 py-3">

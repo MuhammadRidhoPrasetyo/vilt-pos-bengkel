@@ -14,20 +14,36 @@ class ProductVariantService
     public function create(array $data): ProductVariant
     {
         return DB::transaction(function () use ($data) {
-            $productVariant = $this->productVariants->create(Arr::except($data, ['attribute_option_ids']));
+            $productVariant = $this->productVariants->create(Arr::except($data, ['attribute_option_ids', 'images', 'delete_media_ids']));
             $productVariant->attributeOptions()->sync($data['attribute_option_ids'] ?? []);
 
-            return $productVariant->load(['product:id,name', 'attributeOptions:id,attribute_id,value', 'attributeOptions.attribute:id,name']);
+            if (! empty($data['images'])) {
+                foreach ($data['images'] as $file) {
+                    $productVariant->addMedia($file)->toMediaCollection('images');
+                }
+            }
+
+            return $productVariant->load(['product:id,name', 'attributeOptions:id,attribute_id,value', 'attributeOptions.attribute:id,name', 'media']);
         });
     }
 
     public function update(ProductVariant $productVariant, array $data): ProductVariant
     {
         return DB::transaction(function () use ($productVariant, $data) {
-            $productVariant = $this->productVariants->update($productVariant, Arr::except($data, ['attribute_option_ids']));
+            $productVariant = $this->productVariants->update($productVariant, Arr::except($data, ['attribute_option_ids', 'images', 'delete_media_ids']));
             $productVariant->attributeOptions()->sync($data['attribute_option_ids'] ?? []);
 
-            return $productVariant->load(['product:id,name', 'attributeOptions:id,attribute_id,value', 'attributeOptions.attribute:id,name']);
+            if (! empty($data['delete_media_ids'])) {
+                $productVariant->media()->whereIn('id', $data['delete_media_ids'])->delete();
+            }
+
+            if (! empty($data['images'])) {
+                foreach ($data['images'] as $file) {
+                    $productVariant->addMedia($file)->toMediaCollection('images');
+                }
+            }
+
+            return $productVariant->load(['product:id,name', 'attributeOptions:id,attribute_id,value', 'attributeOptions.attribute:id,name', 'media']);
         });
     }
 

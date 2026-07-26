@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\ProductVariantResource;
 use App\Models\Product;
+use App\Repositories\AttributeRepository;
 use App\Repositories\BrandRepository;
 use App\Repositories\ProductCategoryRepository;
 use App\Repositories\ProductRepository;
@@ -23,6 +25,7 @@ class ProductController extends Controller
         private readonly ProductCategoryRepository $productCategories,
         private readonly BrandRepository $brands,
         private readonly UnitRepository $units,
+        private readonly AttributeRepository $attributes,
         private readonly ProductService $service
     ) {}
 
@@ -47,9 +50,11 @@ class ProductController extends Controller
                     ['name' => 'brand_id', 'label' => 'Merek', 'type' => 'select', 'optionKey' => 'brands', 'table' => true, 'displayKey' => 'brand.name'],
                     ['name' => 'unit_id', 'label' => 'Satuan', 'type' => 'select', 'optionKey' => 'units', 'table' => true, 'displayKey' => 'unit.name'],
                     ['name' => 'name', 'label' => 'Nama', 'required' => true, 'table' => true],
+                    ['name' => 'receipt_name', 'label' => 'Nama Struk', 'table' => true],
                     ['name' => 'item_type', 'label' => 'Tipe Item', 'type' => 'select', 'required' => true, 'table' => true, 'options' => [['label' => 'Part', 'value' => 'part'], ['label' => 'Labor', 'value' => 'labor']]],
                     ['name' => 'has_variants', 'label' => 'Punya Varian', 'type' => 'checkbox', 'table' => true],
                     ['name' => 'description', 'label' => 'Deskripsi', 'type' => 'textarea'],
+                    ['name' => 'images', 'label' => 'Gambar Produk (Galeri)', 'type' => 'image_gallery', 'description' => 'Upload foto galeri produk.'],
                 ],
             ],
         ]);
@@ -67,9 +72,36 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Produk berhasil dibuat.');
     }
 
-    public function show(Product $product): RedirectResponse
+    public function show(Product $product): Response
     {
-        return redirect()->route('products.index');
+        $product->load([
+            'category:id,name',
+            'brand:id,name',
+            'unit:id,name',
+            'media',
+            'variants',
+            'variants.media',
+            'variants.attributeOptions:id,attribute_id,value',
+            'variants.attributeOptions.attribute:id,name',
+        ]);
+
+        return Inertia::render('products/show', [
+            'product' => ProductResource::make($product),
+            'variants' => ProductVariantResource::collection($product->variants),
+            'options' => [
+                'productCategories' => $this->productCategories->options()->map(fn ($category) => ['label' => $category->name, 'value' => $category->id]),
+                'brands' => $this->brands->options()->map(fn ($brand) => ['label' => $brand->name, 'value' => $brand->id]),
+                'units' => $this->units->options()->map(fn ($unit) => ['label' => $unit->name, 'value' => $unit->id]),
+            ],
+            'attributes' => $this->attributes->options()->map(fn ($attribute) => [
+                'id' => $attribute->id,
+                'name' => $attribute->name,
+                'options' => $attribute->options->map(fn ($option) => [
+                    'id' => $option->id,
+                    'value' => $option->value,
+                ])->values(),
+            ])->values(),
+        ]);
     }
 
     public function edit(Product $product): RedirectResponse
@@ -81,7 +113,7 @@ class ProductController extends Controller
     {
         $this->service->update($product, $request->validated());
 
-        return redirect()->route('products.index')->with('success', 'Produk berhasil diperbarui.');
+        return redirect()->to(url()->previous(route('products.index')))->with('success', 'Produk berhasil diperbarui.');
     }
 
     public function destroy(Product $product): RedirectResponse
