@@ -29,11 +29,31 @@ const showDiscountModal = ref(false);
 const editingDiscount = ref(null);
 const showStockModal = ref(false);
 const editingStock = ref(null);
+const showPriceModal = ref(false);
+const editingPrice = ref(null);
 
 const productData = computed(() => props.product?.data || props.product || {});
 const variantList = computed(() => props.variants?.data || props.variants || []);
 const productAttributes = computed(() => productData.value.attributes || []);
 const mediaList = computed(() => productData.value.images || []);
+
+const allProductPrices = computed(() => {
+    return variantList.value.flatMap((variant) => {
+        return (variant.prices || []).map((price) => ({
+            ...price,
+            variant_display_name: variant.display_receipt_name,
+        }));
+    });
+});
+
+const allProductPriceHistories = computed(() => {
+    return variantList.value.flatMap((variant) => {
+        return (variant.price_histories || []).map((history) => ({
+            ...history,
+            variant_display_name: variant.display_receipt_name,
+        }));
+    }).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+});
 
 const allProductDiscounts = computed(() => {
     return variantList.value.flatMap((variant) => {
@@ -70,7 +90,7 @@ const tabs = computed(() => {
     }
 
     list.push(
-        { id: 'prices', label: 'Harga Per Toko', icon: 'i-lucide-tag' },
+        { id: 'prices', label: `Harga Per Toko (${allProductPrices.value.length})`, icon: 'i-lucide-tag' },
         { id: 'stocks', label: `Stok Per Gudang (${allProductStocks.value.length})`, icon: 'i-lucide-warehouse' },
         { id: 'discounts', label: `Promo & Diskon (${allProductDiscounts.value.length})`, icon: 'i-lucide-percent' }
     );
@@ -300,6 +320,98 @@ const deleteVariant = (variant) => {
     }
 };
 
+// Product Prices Modal & Handlers
+const priceForm = useForm({
+    product_variant_id: '',
+    store_id: '',
+    purchase_price: 0,
+    selling_price: 0,
+    markup: 0,
+    markup_type: 'amount',
+    is_active: true,
+});
+
+const openCreatePriceModal = () => {
+    editingPrice.value = null;
+    priceForm.clearErrors();
+    priceForm.product_variant_id = variantList.value[0]?.id || '';
+    priceForm.store_id = '';
+    priceForm.purchase_price = variantList.value[0]?.default_purchase_price || 0;
+    priceForm.selling_price = variantList.value[0]?.default_selling_price || 0;
+    priceForm.markup = 0;
+    priceForm.markup_type = 'amount';
+    priceForm.is_active = true;
+    showPriceModal.value = true;
+};
+
+const openEditPriceModal = (price) => {
+    editingPrice.value = price;
+    priceForm.clearErrors();
+    priceForm.product_variant_id = price.product_variant_id;
+    priceForm.store_id = price.store_id || '';
+    priceForm.purchase_price = price.purchase_price;
+    priceForm.selling_price = price.selling_price;
+    priceForm.markup = price.markup || 0;
+    priceForm.markup_type = price.markup_type || 'amount';
+    priceForm.is_active = !!price.is_active;
+    showPriceModal.value = true;
+};
+
+const closePriceModal = () => {
+    showPriceModal.value = false;
+    editingPrice.value = null;
+};
+
+const submitPriceForm = () => {
+    const payload = {
+        product_variant_id: priceForm.product_variant_id,
+        store_id: priceForm.store_id ? priceForm.store_id : null,
+        purchase_price: priceForm.purchase_price,
+        selling_price: priceForm.selling_price,
+        markup: priceForm.markup,
+        markup_type: priceForm.markup_type,
+        is_active: priceForm.is_active,
+    };
+
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => closePriceModal(),
+    };
+
+    if (editingPrice.value) {
+        priceForm.transform(() => ({
+            ...payload,
+            _method: 'put',
+        })).post(`/product-prices/${editingPrice.value.id}`, options);
+        return;
+    }
+
+    priceForm.transform(() => payload).post('/product-prices', options);
+};
+
+const togglePriceActive = (price) => {
+    router.post(`/product-prices/${price.id}`, {
+        _method: 'put',
+        product_variant_id: price.product_variant_id,
+        store_id: price.store_id ? price.store_id : null,
+        purchase_price: price.purchase_price,
+        selling_price: price.selling_price,
+        markup: price.markup || 0,
+        markup_type: price.markup_type || 'amount',
+        is_active: !price.is_active,
+    }, {
+        preserveScroll: true,
+    });
+};
+
+const deletePrice = (price) => {
+    if (confirm(`Hapus konfigurasi harga varian ${price.variant_display_name} untuk ${price.store_name}?`)) {
+        router.delete(`/product-prices/${price.id}`, {
+            preserveScroll: true,
+        });
+    }
+};
+
 // Product Discounts Modal & Handlers
 const discountForm = useForm({
     product_variant_id: '',
@@ -457,12 +569,6 @@ const filteredLocationOptions = computed(() => {
 });
 const variantSelectOptions = computed(() => variantList.value.map((v) => ({ label: v.display_receipt_name, value: v.id })));
 const productSelectOptions = computed(() => [{ label: productData.value.name, value: productData.value.id }]);
-
-// Dummy data for Prices preview
-const dummyPrices = [
-    { id: 1, store_name: 'Bengkel Utama (Pusat)', price_type: 'Toko', purchase_price: 'Rp 35.000', selling_price: 'Rp 45.000', is_active: true },
-    { id: 2, store_name: 'Cabang Jakarta Selatan', price_type: 'Toko', purchase_price: 'Rp 35.000', selling_price: 'Rp 48.000', is_active: true },
-];
 </script>
 
 <template>
@@ -736,39 +842,124 @@ const dummyPrices = [
         </div>
 
         <!-- TAB 3: HARGA PER TOKO -->
-        <div v-if="activeTab === 'prices'" class="space-y-4">
+        <div v-if="activeTab === 'prices'" class="space-y-6">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-highlighted">Manajemen Harga Per Toko (Product Prices)</h3>
                     <p class="text-sm text-muted">Konfigurasi harga jual dan harga beli spesifik per cabang bengkel/toko.</p>
                 </div>
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
+                    @click="openCreatePriceModal"
+                >
+                    <UIcon name="i-lucide-plus" class="size-4" />
+                    Tambah / Set Harga Toko
+                </button>
             </div>
 
+            <!-- Tabel Main: Harga Aktif Per Toko -->
             <div class="overflow-x-auto rounded-xl border border-default bg-default shadow-sm">
                 <table class="min-w-full divide-y divide-default">
                     <thead class="bg-elevated/40">
                         <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Varian Produk</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Cabang Toko</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Tipe Harga</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Harga Beli</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Harga Jual</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Harga Beli Modal</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Harga Jual Kasir</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Status POS</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-default">
-                        <tr v-for="price in dummyPrices" :key="price.id" class="hover:bg-elevated/20 transition-colors">
-                            <td class="px-4 py-3 text-sm font-medium text-highlighted">{{ price.store_name }}</td>
-                            <td class="px-4 py-3 text-sm text-muted">{{ price.price_type }}</td>
-                            <td class="px-4 py-3 text-sm text-muted">{{ price.purchase_price }}</td>
-                            <td class="px-4 py-3 text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ price.selling_price }}</td>
+                        <tr v-for="price in allProductPrices" :key="price.id" class="hover:bg-elevated/20 transition-colors">
+                            <td class="px-4 py-3 text-sm font-medium text-highlighted">{{ price.variant_display_name }}</td>
                             <td class="px-4 py-3 text-sm">
-                                <span class="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-500">
-                                    Aktif
+                                <span :class="!price.store_id ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'" class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium">
+                                    {{ price.store_name }}
                                 </span>
                             </td>
+                            <td class="px-4 py-3 text-sm text-muted">Rp {{ Number(price.purchase_price || 0).toLocaleString('id-ID') }}</td>
+                            <td class="px-4 py-3 text-sm font-semibold text-emerald-600 dark:text-emerald-400">Rp {{ Number(price.selling_price || 0).toLocaleString('id-ID') }}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <USwitch
+                                    :model-value="!!price.is_active"
+                                    color="primary"
+                                    size="sm"
+                                    title="Ubah Status Aktif Kasir"
+                                    @update:model-value="togglePriceActive(price)"
+                                />
+                                <span class="ml-2 text-xs font-medium" :class="price.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted'">
+                                    {{ price.is_active ? 'Aktif' : 'Nonaktif' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-default bg-elevated/50 text-muted hover:bg-elevated hover:text-highlighted transition-all"
+                                        title="Edit Harga Toko"
+                                        @click="openEditPriceModal(price)"
+                                    >
+                                        <UIcon name="i-lucide-pencil" class="size-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
+                                        title="Hapus Harga Toko"
+                                        @click="deletePrice(price)"
+                                    >
+                                        <UIcon name="i-lucide-trash-2" class="size-4" />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="allProductPrices.length === 0">
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-muted">Belum ada konfigurasi harga per toko.</td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Tabel Sub-Section: Riwayat Perubahan Harga (Product Price Histories) -->
+            <div class="space-y-3 pt-4 border-t border-default">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <UIcon name="i-lucide-history" class="size-5 text-primary" />
+                        <h4 class="text-base font-semibold text-highlighted">Riwayat Perubahan Harga (Price Histories)</h4>
+                    </div>
+                    <span class="text-xs text-muted">Audit trail perubahan harga modal & harga jual</span>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-default bg-default shadow-sm">
+                    <table class="min-w-full divide-y divide-default">
+                        <thead class="bg-elevated/40">
+                            <tr>
+                                <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted">Tanggal Log</th>
+                                <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted">Varian Produk</th>
+                                <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted">Cabang Toko</th>
+                                <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted">Snapshot Harga Beli</th>
+                                <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted">Snapshot Harga Jual</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-default">
+                            <tr v-for="history in allProductPriceHistories" :key="history.id" class="hover:bg-elevated/20 transition-colors">
+                                <td class="px-4 py-2.5 text-xs font-medium text-highlighted">{{ history.date || history.created_at || '-' }}</td>
+                                <td class="px-4 py-2.5 text-xs text-highlighted font-medium">{{ history.variant_display_name }}</td>
+                                <td class="px-4 py-2.5 text-xs text-muted">
+                                    <span :class="!history.store_id ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'" class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium">
+                                        {{ history.store_name }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-2.5 text-xs text-muted">Rp {{ Number(history.purchase_price || 0).toLocaleString('id-ID') }}</td>
+                                <td class="px-4 py-2.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Rp {{ Number(history.selling_price || 0).toLocaleString('id-ID') }}</td>
+                            </tr>
+                            <tr v-if="allProductPriceHistories.length === 0">
+                                <td colspan="5" class="px-4 py-6 text-center text-xs text-muted">Belum ada catatan riwayat perubahan harga.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -1085,6 +1276,80 @@ const dummyPrices = [
                     @submit="submitVariantForm"
                     @cancel="closeVariantModal"
                 />
+            </div>
+        </div>
+
+        <!-- MODAL TAMBAH / EDIT HARGA PER TOKO -->
+        <div v-if="showPriceModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+            <div class="max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto rounded-xl bg-default p-6 shadow-2xl border border-default space-y-5">
+                <div class="flex items-center justify-between border-b border-default pb-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-highlighted">
+                            {{ editingPrice ? 'Edit Harga Per Toko' : 'Konfigurasi Harga Per Toko Baru' }}
+                        </h2>
+                        <p class="text-xs text-muted">Perubahan harga akan otomatis dicatat ke dalam Riwayat Perubahan Harga.</p>
+                    </div>
+                    <button class="rounded-md p-1.5 hover:bg-elevated" type="button" @click="closePriceModal">
+                        <UIcon name="i-lucide-x" class="size-5" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="submitPriceForm">
+                    <label class="grid gap-1 text-sm">
+                        <span class="font-medium">Varian Produk *</span>
+                        <USelect v-model="priceForm.product_variant_id" :items="variantSelectOptions" class="w-full" placeholder="Pilih Varian" required />
+                        <span v-if="priceForm.errors.product_variant_id" class="text-xs text-red-600">{{ priceForm.errors.product_variant_id }}</span>
+                    </label>
+
+                    <label class="grid gap-1 text-sm">
+                        <span class="font-medium">Cabang Toko / Bengkel</span>
+                        <USelect v-model="priceForm.store_id" :items="storeOptions" class="w-full" placeholder="Pilih Toko Spesifik atau Global" />
+                        <span class="text-xs text-muted">Jika memilih "Semua Toko (Global)", harga ini berlaku untuk seluruh cabang toko.</span>
+                        <span v-if="priceForm.errors.store_id" class="text-xs text-red-600">{{ priceForm.errors.store_id }}</span>
+                    </label>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="grid gap-1 text-sm">
+                            <span class="font-medium">Harga Beli Modal (Rp) *</span>
+                            <input
+                                v-model="priceForm.purchase_price"
+                                class="w-full rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                required
+                            />
+                            <span v-if="priceForm.errors.purchase_price" class="text-xs text-red-600">{{ priceForm.errors.purchase_price }}</span>
+                        </label>
+
+                        <label class="grid gap-1 text-sm">
+                            <span class="font-medium">Harga Jual Kasir (Rp) *</span>
+                            <input
+                                v-model="priceForm.selling_price"
+                                class="w-full rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                required
+                            />
+                            <span v-if="priceForm.errors.selling_price" class="text-xs text-red-600">{{ priceForm.errors.selling_price }}</span>
+                        </label>
+                    </div>
+
+                    <label class="flex items-center gap-3 rounded-md border border-default p-3">
+                        <input v-model="priceForm.is_active" class="size-4" type="checkbox" />
+                        <span class="text-sm font-medium">Aktifkan harga ini untuk transaksi kasir</span>
+                    </label>
+
+                    <div class="flex items-center justify-end gap-3 border-t border-default pt-4">
+                        <button type="button" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated" @click="closePriceModal">
+                            Batal
+                        </button>
+                        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90" :disabled="priceForm.processing">
+                            {{ editingPrice ? 'Simpan Perubahan' : 'Set Harga Toko' }}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 

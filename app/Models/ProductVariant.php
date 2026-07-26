@@ -65,6 +65,16 @@ class ProductVariant extends BaseModel implements HasMedia
         return $this->hasMany(InventoryMovement::class);
     }
 
+    public function prices(): HasMany
+    {
+        return $this->hasMany(ProductPrice::class);
+    }
+
+    public function priceHistories(): HasMany
+    {
+        return $this->hasMany(ProductPriceHistory::class);
+    }
+
     public function displayReceiptName(): EloquentAttribute
     {
         return EloquentAttribute::make(

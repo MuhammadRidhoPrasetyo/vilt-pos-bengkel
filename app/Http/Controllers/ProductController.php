@@ -100,6 +100,10 @@ class ProductController extends Controller
             'variants.stocks',
             'variants.stocks.warehouse:id,name',
             'variants.stocks.warehouseLocation:id,name,full_path,warehouse_id',
+            'variants.prices',
+            'variants.prices.store:id,name',
+            'variants.priceHistories',
+            'variants.priceHistories.store:id,name',
         ]);
 
         return Inertia::render('products/show', [
