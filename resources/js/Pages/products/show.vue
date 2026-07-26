@@ -1,8 +1,9 @@
 <script setup>
+import DeleteConfirmationModal from '../../Components/DeleteConfirmationModal.vue';
 import MultiImageUploader from '../../Components/MultiImageUploader.vue';
 import ProductVariantForm from '../../Components/ProductVariantForm.vue';
 import DashboardLayout from '../../Layouts/DashboardLayout.vue';
-import { Link, router, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 defineOptions({
@@ -15,6 +16,10 @@ const props = defineProps({
     options: Object,
     attributes: Array,
 });
+
+const page = usePage();
+const currentUser = computed(() => page.props.auth?.user || {});
+const isOwner = computed(() => !currentUser.value.store_id || currentUser.value.roles?.includes('owner'));
 
 const activeTab = ref('info');
 const activeImageIndex = ref(0);
@@ -31,6 +36,26 @@ const showStockModal = ref(false);
 const editingStock = ref(null);
 const showPriceModal = ref(false);
 const editingPrice = ref(null);
+
+// Delete Confirmation Modal State
+const showDeleteConfirmModal = ref(false);
+const deleteConfirmData = ref({
+    title: 'Konfirmasi Hapus Data',
+    description: 'Data yang dihapus tidak dapat dikembalikan.',
+    action: null,
+});
+
+const triggerDeleteConfirm = (title, description, action) => {
+    deleteConfirmData.value = { title, description, action };
+    showDeleteConfirmModal.value = true;
+};
+
+const handleConfirmDelete = () => {
+    if (typeof deleteConfirmData.value.action === 'function') {
+        deleteConfirmData.value.action();
+    }
+    showDeleteConfirmModal.value = false;
+};
 
 const productData = computed(() => props.product?.data || props.product || {});
 const variantList = computed(() => props.variants?.data || props.variants || []);
@@ -191,7 +216,7 @@ const submitAttributeForm = () => {
         .filter(Boolean);
 
     if (cleanedOptions.length === 0) {
-        alert('Masukkan minimal 1 opsi nilai atribut.');
+        attributeModalForm.setError('options', 'Masukkan minimal 1 opsi nilai atribut.');
         return;
     }
 
@@ -215,11 +240,13 @@ const submitAttributeForm = () => {
 };
 
 const deleteAttribute = (attr) => {
-    if (confirm(`Hapus atribut "${attr.name}" beserta opsi nilainya?`)) {
-        router.delete(`/product-attributes/${attr.id}`, {
-            preserveScroll: true,
-        });
-    }
+    triggerDeleteConfirm(
+        'Hapus Atribut Produk',
+        `Apakah Anda yakin ingin menghapus atribut "${attr.name}" beserta seluruh opsi nilainya?`,
+        () => {
+            router.delete(`/product-attributes/${attr.id}`, { preserveScroll: true });
+        }
+    );
 };
 
 // Variant Create / Edit Form
@@ -313,11 +340,13 @@ const toggleVariantActive = (variant) => {
 };
 
 const deleteVariant = (variant) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus varian "${variant.display_receipt_name}"?`)) {
-        router.delete(`/product-variants/${variant.id}`, {
-            preserveScroll: true,
-        });
-    }
+    triggerDeleteConfirm(
+        'Hapus Varian Produk',
+        `Apakah Anda yakin ingin menghapus varian "${variant.display_receipt_name}"?`,
+        () => {
+            router.delete(`/product-variants/${variant.id}`, { preserveScroll: true });
+        }
+    );
 };
 
 // Product Prices Modal & Handlers
@@ -335,7 +364,7 @@ const openCreatePriceModal = () => {
     editingPrice.value = null;
     priceForm.clearErrors();
     priceForm.product_variant_id = variantList.value[0]?.id || '';
-    priceForm.store_id = '';
+    priceForm.store_id = isOwner.value ? '' : currentUser.value.store_id;
     priceForm.purchase_price = variantList.value[0]?.default_purchase_price || 0;
     priceForm.selling_price = variantList.value[0]?.default_selling_price || 0;
     priceForm.markup = 0;
@@ -405,11 +434,13 @@ const togglePriceActive = (price) => {
 };
 
 const deletePrice = (price) => {
-    if (confirm(`Hapus konfigurasi harga varian ${price.variant_display_name} untuk ${price.store_name}?`)) {
-        router.delete(`/product-prices/${price.id}`, {
-            preserveScroll: true,
-        });
-    }
+    triggerDeleteConfirm(
+        'Hapus Harga Toko',
+        `Apakah Anda yakin ingin menghapus konfigurasi harga varian ${price.variant_display_name} untuk ${price.store_name}?`,
+        () => {
+            router.delete(`/product-prices/${price.id}`, { preserveScroll: true });
+        }
+    );
 };
 
 // Product Discounts Modal & Handlers
@@ -425,7 +456,7 @@ const openCreateDiscountModal = () => {
     editingDiscount.value = null;
     discountForm.clearErrors();
     discountForm.product_variant_id = variantList.value[0]?.id || '';
-    discountForm.store_id = '';
+    discountForm.store_id = isOwner.value ? '' : currentUser.value.store_id;
     discountForm.discount_type_id = discountTypeOptions.value[0]?.value || '';
     discountForm.type = 'percent';
     discountForm.value = 0;
@@ -474,11 +505,13 @@ const submitDiscountForm = () => {
 };
 
 const deleteDiscount = (discount) => {
-    if (confirm(`Hapus promo "${discount.discount_type_name}" untuk varian ${discount.variant_display_name}?`)) {
-        router.delete(`/product-discounts/${discount.id}`, {
-            preserveScroll: true,
-        });
-    }
+    triggerDeleteConfirm(
+        'Hapus Promo & Diskon',
+        `Apakah Anda yakin ingin menghapus promo "${discount.discount_type_name}" untuk varian ${discount.variant_display_name}?`,
+        () => {
+            router.delete(`/product-discounts/${discount.id}`, { preserveScroll: true });
+        }
+    );
 };
 
 // Product Stocks Modal & Handlers
@@ -547,17 +580,20 @@ const submitStockForm = () => {
 };
 
 const deleteStock = (stock) => {
-    if (confirm(`Hapus stok varian ${stock.variant_display_name} di gudang ${stock.warehouse_name}?`)) {
-        router.delete(`/product-stocks/${stock.id}`, {
-            preserveScroll: true,
-        });
-    }
+    triggerDeleteConfirm(
+        'Hapus Stok Gudang',
+        `Apakah Anda yakin ingin menghapus stok varian ${stock.variant_display_name} di gudang ${stock.warehouse_name}?`,
+        () => {
+            router.delete(`/product-stocks/${stock.id}`, { preserveScroll: true });
+        }
+    );
 };
 
 // Options for dropdown selects
 const productCategoryOptions = computed(() => props.options?.productCategories || []);
 const brandOptions = computed(() => props.options?.brands || []);
 const unitOptions = computed(() => props.options?.units || []);
+const pureStoreOptions = computed(() => props.options?.stores || []);
 const storeOptions = computed(() => [{ label: 'Semua Toko (Global)', value: '' }, ...(props.options?.stores || [])]);
 const discountTypeOptions = computed(() => props.options?.discountTypes || []);
 const warehouseOptions = computed(() => props.options?.warehouses || []);
@@ -1303,8 +1339,9 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
 
                     <label class="grid gap-1 text-sm">
                         <span class="font-medium">Cabang Toko / Bengkel</span>
-                        <USelect v-model="priceForm.store_id" :items="storeOptions" class="w-full" placeholder="Pilih Toko Spesifik atau Global" />
-                        <span class="text-xs text-muted">Jika memilih "Semua Toko (Global)", harga ini berlaku untuk seluruh cabang toko.</span>
+                        <USelect v-model="priceForm.store_id" :items="isOwner ? storeOptions : pureStoreOptions" :disabled="!isOwner" class="w-full" placeholder="Pilih Toko Spesifik atau Global" />
+                        <span v-if="!isOwner" class="text-xs text-muted">🔒 Lokasi toko ter-lock otomatis sesuai cabang tempat kerja Anda.</span>
+                        <span v-else class="text-xs text-muted">Jika memilih "Semua Toko (Global)", harga ini berlaku untuk seluruh cabang toko.</span>
                         <span v-if="priceForm.errors.store_id" class="text-xs text-red-600">{{ priceForm.errors.store_id }}</span>
                     </label>
 
@@ -1377,8 +1414,9 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
 
                     <label class="grid gap-1 text-sm">
                         <span class="font-medium">Berlaku di Toko / Bengkel</span>
-                        <USelect v-model="discountForm.store_id" :items="storeOptions" class="w-full" placeholder="Pilih Toko Spesifik atau Global" />
-                        <span class="text-xs text-muted">Jika memilih "Semua Toko (Global)", promo ini berlaku untuk seluruh cabang toko.</span>
+                        <USelect v-model="discountForm.store_id" :items="isOwner ? storeOptions : pureStoreOptions" :disabled="!isOwner" class="w-full" placeholder="Pilih Toko Spesifik atau Global" />
+                        <span v-if="!isOwner" class="text-xs text-muted">🔒 Lokasi toko ter-lock otomatis sesuai cabang tempat kerja Anda.</span>
+                        <span v-else class="text-xs text-muted">Jika memilih "Semua Toko (Global)", promo ini berlaku untuk seluruh cabang toko.</span>
                         <span v-if="discountForm.errors.store_id" class="text-xs text-red-600">{{ discountForm.errors.store_id }}</span>
                     </label>
 
@@ -1499,5 +1537,13 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                 </form>
             </div>
         </div>
+
+        <!-- GLOBAL DELETE CONFIRMATION MODAL -->
+        <DeleteConfirmationModal
+            v-model:open="showDeleteConfirmModal"
+            :title="deleteConfirmData.title"
+            :description="deleteConfirmData.description"
+            @confirm="handleConfirmDelete"
+        />
     </div>
 </template>

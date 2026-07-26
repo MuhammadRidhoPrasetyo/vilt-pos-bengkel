@@ -72,3 +72,31 @@ test('authenticated user can view product variant show page', function () {
             ->where('productVariant.data.sku', 'YAMA-08L')
         );
 });
+
+test('deleting a product variant redirects back to parent product show page', function () {
+    $user = User::factory()->create();
+    $category = ProductCategory::create(['name' => 'Oli & Pelumas', 'pricing_mode' => 'fixed']);
+
+    $product = Product::create([
+        'product_category_id' => $category->id,
+        'name' => 'Oli Yamalube Matic 4T',
+        'item_type' => 'part',
+        'has_variants' => true,
+    ]);
+
+    $variant = ProductVariant::create([
+        'product_id' => $product->id,
+        'sku' => 'YAMA-08L',
+        'name_suffix' => '0.8L',
+        'default_purchase_price' => 35000,
+        'default_selling_price' => 45000,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('products.show', $product))
+        ->delete(route('product-variants.destroy', $variant))
+        ->assertRedirect(route('products.show', $product));
+
+    expect(ProductVariant::count())->toBe(0);
+});

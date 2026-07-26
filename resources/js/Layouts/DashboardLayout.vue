@@ -266,10 +266,12 @@ const links = computed(() => [
             icon: 'i-lucide-package',
             active: currentPath.value.startsWith('/product-categories')
                 || currentPath.value.startsWith('/products')
-                || currentPath.value.startsWith('/product-variants'),
+                || currentPath.value.startsWith('/product-variants')
+                || currentPath.value.startsWith('/product-stocks'),
             defaultOpen: currentPath.value.startsWith('/product-categories')
                 || currentPath.value.startsWith('/products')
-                || currentPath.value.startsWith('/product-variants'),
+                || currentPath.value.startsWith('/product-variants')
+                || currentPath.value.startsWith('/product-stocks'),
             type: 'trigger',
             children: [
                 {
@@ -279,6 +281,10 @@ const links = computed(() => [
                 {
                     label: 'Produk',
                     onSelect: () => navigateTo('/products'),
+                },
+                {
+                    label: 'Stok Produk',
+                    onSelect: () => navigateTo('/product-stocks'),
                 },
             ],
         },

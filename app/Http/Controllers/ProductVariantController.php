@@ -106,8 +106,9 @@ class ProductVariantController extends Controller
 
     public function destroy(ProductVariant $productVariant): RedirectResponse
     {
+        $productId = $productVariant->product_id;
         $this->service->delete($productVariant);
 
-        return redirect()->route('product-variants.index')->with('success', 'Varian produk berhasil dihapus.');
+        return redirect()->to(url()->previous(route('products.show', $productId)))->with('success', 'Varian produk berhasil dihapus.');
     }
 }
