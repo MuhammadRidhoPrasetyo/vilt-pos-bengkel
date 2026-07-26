@@ -14,6 +14,8 @@ use App\Repositories\ProductCategoryRepository;
 use App\Repositories\ProductRepository;
 use App\Repositories\StoreRepository;
 use App\Repositories\UnitRepository;
+use App\Repositories\WarehouseLocationRepository;
+use App\Repositories\WarehouseRepository;
 use App\Services\ProductService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,6 +32,8 @@ class ProductController extends Controller
         private readonly AttributeRepository $attributes,
         private readonly StoreRepository $stores,
         private readonly DiscountTypeRepository $discountTypes,
+        private readonly WarehouseRepository $warehouses,
+        private readonly WarehouseLocationRepository $warehouseLocations,
         private readonly ProductService $service
     ) {}
 
@@ -93,6 +97,9 @@ class ProductController extends Controller
             'variants.discounts',
             'variants.discounts.store:id,name',
             'variants.discounts.discountType:id,name',
+            'variants.stocks',
+            'variants.stocks.warehouse:id,name',
+            'variants.stocks.warehouseLocation:id,name,full_path,warehouse_id',
         ]);
 
         return Inertia::render('products/show', [
@@ -104,6 +111,12 @@ class ProductController extends Controller
                 'units' => $this->units->options()->map(fn ($unit) => ['label' => $unit->name, 'value' => $unit->id]),
                 'stores' => $this->stores->options()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
                 'discountTypes' => $this->discountTypes->options()->map(fn ($discountType) => ['label' => $discountType->name, 'value' => $discountType->id]),
+                'warehouses' => $this->warehouses->options()->map(fn ($wh) => ['label' => $wh->name, 'value' => $wh->id]),
+                'warehouseLocations' => $this->warehouseLocations->options()->map(fn ($loc) => [
+                    'label' => ($loc->full_path ?? $loc->name),
+                    'value' => $loc->id,
+                    'warehouse_id' => $loc->warehouse_id,
+                ]),
             ],
             'attributes' => $this->attributes->options()->map(fn ($attribute) => [
                 'id' => $attribute->id,

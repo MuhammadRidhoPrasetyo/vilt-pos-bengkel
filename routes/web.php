@@ -11,6 +11,7 @@ use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductDiscountController;
+use App\Http\Controllers\ProductStockController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StoreController;
@@ -45,6 +46,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('product-attributes/{attribute}', [ProductAttributeController::class, 'destroy'])->name('product-attributes.destroy');
     Route::resource('product-variants', ProductVariantController::class);
     Route::resource('product-discounts', ProductDiscountController::class);
+    Route::resource('product-stocks', ProductStockController::class);
     Route::resource('warehouses', WarehouseController::class);
     Route::resource('warehouse-locations', WarehouseLocationController::class);
     Route::resource('roles', RoleController::class);

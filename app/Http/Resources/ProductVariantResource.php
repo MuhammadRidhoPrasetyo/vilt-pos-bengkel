@@ -63,6 +63,18 @@ class ProductVariantResource extends JsonResource
                 'formatted_value' => $discount->type === 'percent' ? $discount->value.'%' : 'Rp '.number_format($discount->value, 0, ',', '.'),
                 'created_at' => $discount->created_at?->toDateTimeString(),
             ])->values()),
+            'stocks' => $this->whenLoaded('stocks', fn () => $this->stocks->map(fn ($stock) => [
+                'id' => $stock->id,
+                'product_variant_id' => $stock->product_variant_id,
+                'warehouse_id' => $stock->warehouse_id,
+                'warehouse_name' => $stock->warehouse?->name ?? '-',
+                'warehouse_location_id' => $stock->warehouse_location_id,
+                'warehouse_location_name' => $stock->warehouseLocation?->full_path ?? $stock->warehouseLocation?->name ?? '-',
+                'quantity' => (int) $stock->quantity,
+                'minimum_stock' => (int) $stock->minimum_stock,
+                'is_hidden' => (bool) $stock->is_hidden,
+                'created_at' => $stock->created_at?->toDateTimeString(),
+            ])->values()),
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }

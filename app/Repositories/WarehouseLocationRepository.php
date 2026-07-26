@@ -25,7 +25,7 @@ class WarehouseLocationRepository
 
     public function options(): Collection
     {
-        return WarehouseLocation::query()->select(['id', 'name'])->orderBy('name')->get();
+        return WarehouseLocation::query()->select(['id', 'name', 'full_path', 'warehouse_id'])->orderBy('name')->get();
     }
 
     public function create(array $data): WarehouseLocation

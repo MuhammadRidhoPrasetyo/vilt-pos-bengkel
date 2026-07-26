@@ -27,6 +27,8 @@ const showVariantModal = ref(false);
 const editingVariant = ref(null);
 const showDiscountModal = ref(false);
 const editingDiscount = ref(null);
+const showStockModal = ref(false);
+const editingStock = ref(null);
 
 const productData = computed(() => props.product?.data || props.product || {});
 const variantList = computed(() => props.variants?.data || props.variants || []);
@@ -37,6 +39,15 @@ const allProductDiscounts = computed(() => {
     return variantList.value.flatMap((variant) => {
         return (variant.discounts || []).map((disc) => ({
             ...disc,
+            variant_display_name: variant.display_receipt_name,
+        }));
+    });
+});
+
+const allProductStocks = computed(() => {
+    return variantList.value.flatMap((variant) => {
+        return (variant.stocks || []).map((stock) => ({
+            ...stock,
             variant_display_name: variant.display_receipt_name,
         }));
     });
@@ -60,7 +71,7 @@ const tabs = computed(() => {
 
     list.push(
         { id: 'prices', label: 'Harga Per Toko', icon: 'i-lucide-tag' },
-        { id: 'stocks', label: 'Stok Per Gudang', icon: 'i-lucide-warehouse' },
+        { id: 'stocks', label: `Stok Per Gudang (${allProductStocks.value.length})`, icon: 'i-lucide-warehouse' },
         { id: 'discounts', label: `Promo & Diskon (${allProductDiscounts.value.length})`, icon: 'i-lucide-percent' }
     );
 
@@ -358,24 +369,99 @@ const deleteDiscount = (discount) => {
     }
 };
 
+// Product Stocks Modal & Handlers
+const stockForm = useForm({
+    product_variant_id: '',
+    warehouse_id: '',
+    warehouse_location_id: '',
+    quantity: 0,
+    minimum_stock: 0,
+    is_hidden: false,
+});
+
+const openCreateStockModal = () => {
+    editingStock.value = null;
+    stockForm.clearErrors();
+    stockForm.product_variant_id = variantList.value[0]?.id || '';
+    stockForm.warehouse_id = warehouseOptions.value[0]?.value || '';
+    stockForm.warehouse_location_id = '';
+    stockForm.quantity = 0;
+    stockForm.minimum_stock = 0;
+    stockForm.is_hidden = false;
+    showStockModal.value = true;
+};
+
+const openEditStockModal = (stock) => {
+    editingStock.value = stock;
+    stockForm.clearErrors();
+    stockForm.product_variant_id = stock.product_variant_id;
+    stockForm.warehouse_id = stock.warehouse_id;
+    stockForm.warehouse_location_id = stock.warehouse_location_id || '';
+    stockForm.quantity = stock.quantity;
+    stockForm.minimum_stock = stock.minimum_stock;
+    stockForm.is_hidden = !!stock.is_hidden;
+    showStockModal.value = true;
+};
+
+const closeStockModal = () => {
+    showStockModal.value = false;
+    editingStock.value = null;
+};
+
+const submitStockForm = () => {
+    const payload = {
+        product_variant_id: stockForm.product_variant_id,
+        warehouse_id: stockForm.warehouse_id,
+        warehouse_location_id: stockForm.warehouse_location_id ? stockForm.warehouse_location_id : null,
+        quantity: stockForm.quantity,
+        minimum_stock: stockForm.minimum_stock,
+        is_hidden: stockForm.is_hidden,
+    };
+
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => closeStockModal(),
+    };
+
+    if (editingStock.value) {
+        stockForm.transform(() => ({
+            ...payload,
+            _method: 'put',
+        })).post(`/product-stocks/${editingStock.value.id}`, options);
+        return;
+    }
+
+    stockForm.transform(() => payload).post('/product-stocks', options);
+};
+
+const deleteStock = (stock) => {
+    if (confirm(`Hapus stok varian ${stock.variant_display_name} di gudang ${stock.warehouse_name}?`)) {
+        router.delete(`/product-stocks/${stock.id}`, {
+            preserveScroll: true,
+        });
+    }
+};
+
 // Options for dropdown selects
 const productCategoryOptions = computed(() => props.options?.productCategories || []);
 const brandOptions = computed(() => props.options?.brands || []);
 const unitOptions = computed(() => props.options?.units || []);
 const storeOptions = computed(() => [{ label: 'Semua Toko (Global)', value: '' }, ...(props.options?.stores || [])]);
 const discountTypeOptions = computed(() => props.options?.discountTypes || []);
+const warehouseOptions = computed(() => props.options?.warehouses || []);
+const filteredLocationOptions = computed(() => {
+    const locs = props.options?.warehouseLocations || [];
+    if (!stockForm.warehouse_id) return [{ label: 'Tanpa Lokasi Spesifik', value: '' }];
+    const matched = locs.filter((l) => l.warehouse_id === stockForm.warehouse_id);
+    return [{ label: 'Tanpa Lokasi Spesifik', value: '' }, ...matched];
+});
 const variantSelectOptions = computed(() => variantList.value.map((v) => ({ label: v.display_receipt_name, value: v.id })));
 const productSelectOptions = computed(() => [{ label: productData.value.name, value: productData.value.id }]);
 
-// Dummy data for Prices & Stocks preview
+// Dummy data for Prices preview
 const dummyPrices = [
     { id: 1, store_name: 'Bengkel Utama (Pusat)', price_type: 'Toko', purchase_price: 'Rp 35.000', selling_price: 'Rp 45.000', is_active: true },
     { id: 2, store_name: 'Cabang Jakarta Selatan', price_type: 'Toko', purchase_price: 'Rp 35.000', selling_price: 'Rp 48.000', is_active: true },
-];
-
-const dummyStocks = [
-    { id: 1, warehouse_name: 'Gudang Utama (Pusat)', location: 'Rak A-01', quantity: 120, min_stock: 15 },
-    { id: 2, warehouse_name: 'Gudang Depan POS', location: 'Display 02', quantity: 18, min_stock: 5 },
 ];
 </script>
 
@@ -693,24 +779,62 @@ const dummyStocks = [
                     <h3 class="text-lg font-semibold text-highlighted">Informasi Stok Gudang (Product Stocks)</h3>
                     <p class="text-sm text-muted">Monitoring jumlah stok fisik di setiap lokasi gudang penyimpan.</p>
                 </div>
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
+                    @click="openCreateStockModal"
+                >
+                    <UIcon name="i-lucide-plus" class="size-4" />
+                    Tambah / Inisialisasi Stok Gudang
+                </button>
             </div>
 
             <div class="overflow-x-auto rounded-xl border border-default bg-default shadow-sm">
                 <table class="min-w-full divide-y divide-default">
                     <thead class="bg-elevated/40">
                         <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Varian Produk</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Nama Gudang</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Lokasi Spesifik</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Jumlah Stok</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Lokasi Spesifik Gudang</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Jumlah Stok Fisik</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Min Stock Alert</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-default">
-                        <tr v-for="stock in dummyStocks" :key="stock.id" class="hover:bg-elevated/20 transition-colors">
-                            <td class="px-4 py-3 text-sm font-medium text-highlighted">{{ stock.warehouse_name }}</td>
-                            <td class="px-4 py-3 text-sm text-muted">{{ stock.location }}</td>
-                            <td class="px-4 py-3 text-sm font-semibold text-blue-600 dark:text-blue-400">{{ stock.quantity }} {{ productData.unit?.name || 'Pcs' }}</td>
-                            <td class="px-4 py-3 text-sm text-muted">{{ stock.min_stock }} {{ productData.unit?.name || 'Pcs' }}</td>
+                        <tr v-for="stock in allProductStocks" :key="stock.id" class="hover:bg-elevated/20 transition-colors">
+                            <td class="px-4 py-3 text-sm font-medium text-highlighted">{{ stock.variant_display_name }}</td>
+                            <td class="px-4 py-3 text-sm text-highlighted font-medium">{{ stock.warehouse_name }}</td>
+                            <td class="px-4 py-3 text-sm text-muted">{{ stock.warehouse_location_name }}</td>
+                            <td class="px-4 py-3 text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                {{ stock.quantity }} {{ productData.unit?.name || 'Pcs' }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-muted">
+                                {{ stock.minimum_stock }} {{ productData.unit?.name || 'Pcs' }}
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-default bg-elevated/50 text-muted hover:bg-elevated hover:text-highlighted transition-all"
+                                        title="Edit / Adjust Stok"
+                                        @click="openEditStockModal(stock)"
+                                    >
+                                        <UIcon name="i-lucide-pencil" class="size-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
+                                        title="Hapus Stok Gudang"
+                                        @click="deleteStock(stock)"
+                                    >
+                                        <UIcon name="i-lucide-trash-2" class="size-4" />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="allProductStocks.length === 0">
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-muted">Belum ada stok gudang terdaftar untuk produk ini.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1031,6 +1155,80 @@ const dummyStocks = [
                         </button>
                         <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90" :disabled="discountForm.processing">
                             {{ editingDiscount ? 'Simpan Perubahan' : 'Tambah Diskon' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL TAMBAH / EDIT STOK GUDANG -->
+        <div v-if="showStockModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+            <div class="max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto rounded-xl bg-default p-6 shadow-2xl border border-default space-y-5">
+                <div class="flex items-center justify-between border-b border-default pb-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-highlighted">
+                            {{ editingStock ? 'Edit / Adjust Stok Gudang' : 'Inisialisasi Stok Gudang Baru' }}
+                        </h2>
+                        <p class="text-xs text-muted">Stok awal akan otomatis dicatat sebagai barang masuk di Ledger Mutasi Stok.</p>
+                    </div>
+                    <button class="rounded-md p-1.5 hover:bg-elevated" type="button" @click="closeStockModal">
+                        <UIcon name="i-lucide-x" class="size-5" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="submitStockForm">
+                    <label class="grid gap-1 text-sm">
+                        <span class="font-medium">Varian Produk *</span>
+                        <USelect v-model="stockForm.product_variant_id" :items="variantSelectOptions" class="w-full" placeholder="Pilih Varian" required />
+                        <span v-if="stockForm.errors.product_variant_id" class="text-xs text-red-600">{{ stockForm.errors.product_variant_id }}</span>
+                    </label>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="grid gap-1 text-sm">
+                            <span class="font-medium">Gudang *</span>
+                            <USelect v-model="stockForm.warehouse_id" :items="warehouseOptions" class="w-full" placeholder="Pilih Gudang" required />
+                            <span v-if="stockForm.errors.warehouse_id" class="text-xs text-red-600">{{ stockForm.errors.warehouse_id }}</span>
+                        </label>
+
+                        <label class="grid gap-1 text-sm">
+                            <span class="font-medium">Lokasi Spesifik Gudang</span>
+                            <USelect v-model="stockForm.warehouse_location_id" :items="filteredLocationOptions" class="w-full" placeholder="Pilih Rak / Titik Lokasi" />
+                            <span v-if="stockForm.errors.warehouse_location_id" class="text-xs text-red-600">{{ stockForm.errors.warehouse_location_id }}</span>
+                        </label>
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="grid gap-1 text-sm">
+                            <span class="font-medium">Jumlah Stok Fisik *</span>
+                            <input
+                                v-model="stockForm.quantity"
+                                class="w-full rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary"
+                                type="number"
+                                min="0"
+                                required
+                            />
+                            <span v-if="stockForm.errors.quantity" class="text-xs text-red-600">{{ stockForm.errors.quantity }}</span>
+                        </label>
+
+                        <label class="grid gap-1 text-sm">
+                            <span class="font-medium">Min Stock Alert *</span>
+                            <input
+                                v-model="stockForm.minimum_stock"
+                                class="w-full rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary"
+                                type="number"
+                                min="0"
+                                required
+                            />
+                            <span v-if="stockForm.errors.minimum_stock" class="text-xs text-red-600">{{ stockForm.errors.minimum_stock }}</span>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 border-t border-default pt-4">
+                        <button type="button" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated" @click="closeStockModal">
+                            Batal
+                        </button>
+                        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90" :disabled="stockForm.processing">
+                            {{ editingStock ? 'Simpan Perubahan' : 'Inisialisasi Stok' }}
                         </button>
                     </div>
                 </form>
