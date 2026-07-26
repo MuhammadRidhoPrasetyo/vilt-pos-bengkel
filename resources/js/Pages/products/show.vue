@@ -2,7 +2,7 @@
 import MultiImageUploader from '../../Components/MultiImageUploader.vue';
 import ProductVariantForm from '../../Components/ProductVariantForm.vue';
 import DashboardLayout from '../../Layouts/DashboardLayout.vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 defineOptions({
@@ -21,12 +21,26 @@ const activeImageIndex = ref(0);
 
 // Modal states
 const showEditProductModal = ref(false);
+const showManageAttributesModal = ref(false);
+const editingAttribute = ref(null);
 const showVariantModal = ref(false);
 const editingVariant = ref(null);
+const showDiscountModal = ref(false);
+const editingDiscount = ref(null);
 
 const productData = computed(() => props.product?.data || props.product || {});
 const variantList = computed(() => props.variants?.data || props.variants || []);
+const productAttributes = computed(() => productData.value.attributes || []);
 const mediaList = computed(() => productData.value.images || []);
+
+const allProductDiscounts = computed(() => {
+    return variantList.value.flatMap((variant) => {
+        return (variant.discounts || []).map((disc) => ({
+            ...disc,
+            variant_display_name: variant.display_receipt_name,
+        }));
+    });
+});
 
 const currentImage = computed(() => {
     if (mediaList.value.length > 0) {
@@ -47,7 +61,7 @@ const tabs = computed(() => {
     list.push(
         { id: 'prices', label: 'Harga Per Toko', icon: 'i-lucide-tag' },
         { id: 'stocks', label: 'Stok Per Gudang', icon: 'i-lucide-warehouse' },
-        { id: 'discounts', label: 'Promo & Diskon', icon: 'i-lucide-percent' }
+        { id: 'discounts', label: `Promo & Diskon (${allProductDiscounts.value.length})`, icon: 'i-lucide-percent' }
     );
 
     return list;
@@ -96,6 +110,85 @@ const submitProductEdit = () => {
             closeEditProductModal();
         },
     });
+};
+
+// Inline Product Attribute Form with Button-based Option Rows
+const attributeModalForm = useForm({
+    name: '',
+    options: [''],
+});
+
+const addOptionRow = () => {
+    attributeModalForm.options.push('');
+};
+
+const removeOptionRow = (index) => {
+    if (attributeModalForm.options.length > 1) {
+        attributeModalForm.options.splice(index, 1);
+    } else {
+        attributeModalForm.options = [''];
+    }
+};
+
+const openCreateAttributeModal = () => {
+    editingAttribute.value = null;
+    attributeModalForm.clearErrors();
+    attributeModalForm.name = '';
+    attributeModalForm.options = [''];
+    showManageAttributesModal.value = true;
+};
+
+const openEditAttributeModal = (attr) => {
+    editingAttribute.value = attr;
+    attributeModalForm.clearErrors();
+    attributeModalForm.name = attr.name;
+    attributeModalForm.options = (attr.options || []).map((o) => o.value);
+    if (attributeModalForm.options.length === 0) {
+        attributeModalForm.options = [''];
+    }
+    showManageAttributesModal.value = true;
+};
+
+const closeManageAttributesModal = () => {
+    showManageAttributesModal.value = false;
+    editingAttribute.value = null;
+};
+
+const submitAttributeForm = () => {
+    const cleanedOptions = attributeModalForm.options
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    if (cleanedOptions.length === 0) {
+        alert('Masukkan minimal 1 opsi nilai atribut.');
+        return;
+    }
+
+    if (editingAttribute.value) {
+        attributeModalForm.transform(() => ({
+            name: attributeModalForm.name,
+            options: cleanedOptions,
+        })).put(`/product-attributes/${editingAttribute.value.id}`, {
+            preserveScroll: true,
+            onSuccess: () => closeManageAttributesModal(),
+        });
+    } else {
+        attributeModalForm.transform(() => ({
+            name: attributeModalForm.name,
+            options: cleanedOptions,
+        })).post(`/products/${productData.value.id}/attributes`, {
+            preserveScroll: true,
+            onSuccess: () => closeManageAttributesModal(),
+        });
+    }
+};
+
+const deleteAttribute = (attr) => {
+    if (confirm(`Hapus atribut "${attr.name}" beserta opsi nilainya?`)) {
+        router.delete(`/product-attributes/${attr.id}`, {
+            preserveScroll: true,
+        });
+    }
 };
 
 // Variant Create / Edit Form
@@ -171,13 +264,110 @@ const submitVariantForm = () => {
     variantForm.post('/product-variants', options);
 };
 
+const toggleVariantActive = (variant) => {
+    router.post(`/product-variants/${variant.id}`, {
+        _method: 'put',
+        product_id: variant.product_id,
+        sku: variant.sku || '',
+        barcode: variant.barcode || '',
+        name_suffix: variant.name_suffix || '',
+        receipt_name: variant.receipt_name || '',
+        default_purchase_price: variant.default_purchase_price || 0,
+        default_selling_price: variant.default_selling_price || 0,
+        is_active: !variant.is_active,
+        attribute_option_ids: variant.attribute_option_ids || [],
+    }, {
+        preserveScroll: true,
+    });
+};
+
+const deleteVariant = (variant) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus varian "${variant.display_receipt_name}"?`)) {
+        router.delete(`/product-variants/${variant.id}`, {
+            preserveScroll: true,
+        });
+    }
+};
+
+// Product Discounts Modal & Handlers
+const discountForm = useForm({
+    product_variant_id: '',
+    store_id: '',
+    discount_type_id: '',
+    type: 'percent',
+    value: 0,
+});
+
+const openCreateDiscountModal = () => {
+    editingDiscount.value = null;
+    discountForm.clearErrors();
+    discountForm.product_variant_id = variantList.value[0]?.id || '';
+    discountForm.store_id = '';
+    discountForm.discount_type_id = discountTypeOptions.value[0]?.value || '';
+    discountForm.type = 'percent';
+    discountForm.value = 0;
+    showDiscountModal.value = true;
+};
+
+const openEditDiscountModal = (discount) => {
+    editingDiscount.value = discount;
+    discountForm.clearErrors();
+    discountForm.product_variant_id = discount.product_variant_id;
+    discountForm.store_id = discount.store_id || '';
+    discountForm.discount_type_id = discount.discount_type_id;
+    discountForm.type = discount.type;
+    discountForm.value = discount.value;
+    showDiscountModal.value = true;
+};
+
+const closeDiscountModal = () => {
+    showDiscountModal.value = false;
+    editingDiscount.value = null;
+};
+
+const submitDiscountForm = () => {
+    const payload = {
+        product_variant_id: discountForm.product_variant_id,
+        store_id: discountForm.store_id ? discountForm.store_id : null,
+        discount_type_id: discountForm.discount_type_id,
+        type: discountForm.type,
+        value: discountForm.value,
+    };
+
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => closeDiscountModal(),
+    };
+
+    if (editingDiscount.value) {
+        discountForm.transform(() => ({
+            ...payload,
+            _method: 'put',
+        })).post(`/product-discounts/${editingDiscount.value.id}`, options);
+        return;
+    }
+
+    discountForm.transform(() => payload).post('/product-discounts', options);
+};
+
+const deleteDiscount = (discount) => {
+    if (confirm(`Hapus promo "${discount.discount_type_name}" untuk varian ${discount.variant_display_name}?`)) {
+        router.delete(`/product-discounts/${discount.id}`, {
+            preserveScroll: true,
+        });
+    }
+};
+
 // Options for dropdown selects
 const productCategoryOptions = computed(() => props.options?.productCategories || []);
 const brandOptions = computed(() => props.options?.brands || []);
 const unitOptions = computed(() => props.options?.units || []);
+const storeOptions = computed(() => [{ label: 'Semua Toko (Global)', value: '' }, ...(props.options?.stores || [])]);
+const discountTypeOptions = computed(() => props.options?.discountTypes || []);
+const variantSelectOptions = computed(() => variantList.value.map((v) => ({ label: v.display_receipt_name, value: v.id })));
 const productSelectOptions = computed(() => [{ label: productData.value.name, value: productData.value.id }]);
 
-// Dummy data for Prices, Stocks, Discounts preview
+// Dummy data for Prices & Stocks preview
 const dummyPrices = [
     { id: 1, store_name: 'Bengkel Utama (Pusat)', price_type: 'Toko', purchase_price: 'Rp 35.000', selling_price: 'Rp 45.000', is_active: true },
     { id: 2, store_name: 'Cabang Jakarta Selatan', price_type: 'Toko', purchase_price: 'Rp 35.000', selling_price: 'Rp 48.000', is_active: true },
@@ -186,10 +376,6 @@ const dummyPrices = [
 const dummyStocks = [
     { id: 1, warehouse_name: 'Gudang Utama (Pusat)', location: 'Rak A-01', quantity: 120, min_stock: 15 },
     { id: 2, warehouse_name: 'Gudang Depan POS', location: 'Display 02', quantity: 18, min_stock: 5 },
-];
-
-const dummyDiscounts = [
-    { id: 1, store_name: 'Semua Toko (Global)', discount_name: 'Promo Pelanggan Setia 10%', type: 'Persentase', value: '10%', is_active: true },
 ];
 </script>
 
@@ -220,6 +406,14 @@ const dummyDiscounts = [
             </div>
 
             <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-md border border-default bg-elevated/50 px-3.5 py-2 text-sm font-medium text-highlighted hover:bg-elevated transition-all"
+                    @click="openCreateAttributeModal"
+                >
+                    <UIcon name="i-lucide-plus" class="size-4 text-primary" />
+                    Tambah Atribut Produk
+                </button>
                 <button
                     type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
@@ -312,6 +506,41 @@ const dummyDiscounts = [
                         </div>
                     </div>
 
+                    <!-- Product Attributes Section -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-muted">Atribut Khusus Produk Ini</span>
+                            <button type="button" class="text-xs text-primary font-medium hover:underline flex items-center gap-1" @click="openCreateAttributeModal">
+                                <UIcon name="i-lucide-plus" class="size-3.5" />
+                                Tambah Atribut Baru
+                            </button>
+                        </div>
+
+                        <div v-if="productAttributes.length > 0" class="space-y-2.5">
+                            <div v-for="attr in productAttributes" :key="attr.id" class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-default p-3 bg-elevated/20">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-bold text-highlighted uppercase tracking-wider">{{ attr.name }}</span>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <span v-for="opt in attr.options" :key="opt.id" class="inline-flex items-center rounded-md bg-primary/10 border border-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
+                                            {{ opt.value }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" class="p-1 text-muted hover:text-highlighted rounded hover:bg-elevated" title="Edit Atribut" @click="openEditAttributeModal(attr)">
+                                        <UIcon name="i-lucide-pencil" class="size-3.5" />
+                                    </button>
+                                    <button type="button" class="p-1 text-red-500 hover:text-red-600 rounded hover:bg-red-500/10" title="Hapus Atribut" @click="deleteAttribute(attr)">
+                                        <UIcon name="i-lucide-trash-2" class="size-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="rounded-lg border border-dashed border-default p-3 text-xs text-muted">
+                            Belum ada atribut khusus yang dibuat untuk produk ini. Klik tombol di atas untuk menambah atribut (misal: Volume, Viskositas, Ukuran).
+                        </div>
+                    </div>
+
                     <div class="space-y-2">
                         <span class="text-xs font-semibold uppercase tracking-wider text-muted">Deskripsi Produk</span>
                         <div class="rounded-lg border border-default/60 bg-elevated/20 p-4 text-sm text-highlighted leading-relaxed min-h-24">
@@ -356,7 +585,7 @@ const dummyDiscounts = [
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Nama Struk</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Atribut</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Harga Jual Default</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Status POS</th>
                             <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted">Aksi</th>
                         </tr>
                     </thead>
@@ -373,7 +602,14 @@ const dummyDiscounts = [
                                 Rp {{ Number(variant.default_selling_price || 0).toLocaleString('id-ID') }}
                             </td>
                             <td class="px-4 py-3 text-sm">
-                                <span :class="variant.is_active ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' : 'text-red-500 bg-red-500/10 border-red-500/20'" class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium">
+                                <USwitch
+                                    :model-value="!!variant.is_active"
+                                    color="primary"
+                                    size="sm"
+                                    title="Ubah Status Aktif Kasir"
+                                    @update:model-value="toggleVariantActive(variant)"
+                                />
+                                <span class="ml-2 text-xs font-medium" :class="variant.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted'">
                                     {{ variant.is_active ? 'Aktif' : 'Nonaktif' }}
                                 </span>
                             </td>
@@ -386,6 +622,14 @@ const dummyDiscounts = [
                                         @click="openEditVariantModal(variant)"
                                     >
                                         <UIcon name="i-lucide-pencil" class="size-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
+                                        title="Hapus Varian"
+                                        @click="deleteVariant(variant)"
+                                    >
+                                        <UIcon name="i-lucide-trash-2" class="size-4" />
                                     </button>
                                     <Link
                                         :href="`/product-variants/${variant.id}`"
@@ -478,32 +722,64 @@ const dummyDiscounts = [
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-highlighted">Promo & Diskon (Product Discounts)</h3>
-                    <p class="text-sm text-muted">Daftar aturan diskon yang dikonfigurasikan pada produk/varian ini.</p>
+                    <p class="text-sm text-muted">Daftar aturan diskon yang dikonfigurasikan pada varian produk ini.</p>
                 </div>
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
+                    @click="openCreateDiscountModal"
+                >
+                    <UIcon name="i-lucide-plus" class="size-4" />
+                    Tambah Promo / Diskon
+                </button>
             </div>
 
             <div class="overflow-x-auto rounded-xl border border-default bg-default shadow-sm">
                 <table class="min-w-full divide-y divide-default">
                     <thead class="bg-elevated/40">
                         <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Varian Produk</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Berlaku di Toko</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Nama Promo</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Tipe Nilai</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Tipe Potongan</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Potongan Diskon</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted">Status</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-default">
-                        <tr v-for="discount in dummyDiscounts" :key="discount.id" class="hover:bg-elevated/20 transition-colors">
-                            <td class="px-4 py-3 text-sm font-medium text-highlighted">{{ discount.store_name }}</td>
-                            <td class="px-4 py-3 text-sm text-muted">{{ discount.discount_name }}</td>
-                            <td class="px-4 py-3 text-sm text-muted">{{ discount.type }}</td>
-                            <td class="px-4 py-3 text-sm font-semibold text-purple-600 dark:text-purple-400">{{ discount.value }}</td>
+                        <tr v-for="discount in allProductDiscounts" :key="discount.id" class="hover:bg-elevated/20 transition-colors">
+                            <td class="px-4 py-3 text-sm font-medium text-highlighted">{{ discount.variant_display_name }}</td>
                             <td class="px-4 py-3 text-sm">
-                                <span class="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-500">
-                                    Aktif
+                                <span :class="!discount.store_id ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'" class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium">
+                                    {{ discount.store_name }}
                                 </span>
                             </td>
+                            <td class="px-4 py-3 text-sm text-highlighted font-medium">{{ discount.discount_type_name }}</td>
+                            <td class="px-4 py-3 text-sm text-muted">{{ discount.type_label }}</td>
+                            <td class="px-4 py-3 text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ discount.formatted_value }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-default bg-elevated/50 text-muted hover:bg-elevated hover:text-highlighted transition-all"
+                                        title="Edit Diskon"
+                                        @click="openEditDiscountModal(discount)"
+                                    >
+                                        <UIcon name="i-lucide-pencil" class="size-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
+                                        title="Hapus Diskon"
+                                        @click="deleteDiscount(discount)"
+                                    >
+                                        <UIcon name="i-lucide-trash-2" class="size-4" />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="allProductDiscounts.length === 0">
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-muted">Belum ada promo atau diskon terdaftar.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -588,6 +864,80 @@ const dummyDiscounts = [
             </div>
         </div>
 
+        <!-- MODAL TAMBAH / EDIT ATRIBUT PRODUK -->
+        <div v-if="showManageAttributesModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+            <div class="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-default p-6 shadow-2xl border border-default space-y-5">
+                <div class="flex items-center justify-between border-b border-default pb-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-highlighted">
+                            {{ editingAttribute ? 'Edit Atribut Produk' : 'Tambah Atribut Produk' }}
+                        </h2>
+                        <p class="text-xs text-muted">Input nama atribut dan opsi nilainya untuk produk "{{ productData.name }}".</p>
+                    </div>
+                    <button class="rounded-md p-1.5 hover:bg-elevated" type="button" @click="closeManageAttributesModal">
+                        <UIcon name="i-lucide-x" class="size-5" />
+                    </button>
+                </div>
+
+                <form class="space-y-5" @submit.prevent="submitAttributeForm">
+                    <label class="grid gap-1 text-sm">
+                        <span class="font-medium">Nama Atribut *</span>
+                        <input v-model="attributeModalForm.name" class="rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary" type="text" placeholder="Contoh: Ukuran, Warna, Viskositas" required />
+                        <span v-if="attributeModalForm.errors.name" class="text-xs text-red-600">{{ attributeModalForm.errors.name }}</span>
+                    </label>
+
+                    <!-- Interactive Option Rows -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium">Opsi Nilai Atribut *</span>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                                @click="addOptionRow"
+                            >
+                                <UIcon name="i-lucide-plus" class="size-3.5" />
+                                Tambah Opsi Nilai
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div
+                                v-for="(option, idx) in attributeModalForm.options"
+                                :key="idx"
+                                class="flex items-center gap-2"
+                            >
+                                <input
+                                    v-model="attributeModalForm.options[idx]"
+                                    class="flex-1 rounded-md border border-default bg-default px-3 py-2 text-sm outline-none focus:border-primary"
+                                    type="text"
+                                    :placeholder="`Opsi ${idx + 1} (Contoh: ${idx === 0 ? '0.8L' : idx === 1 ? '1L' : '1.2L'})`"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-default p-2 text-muted hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                                    title="Hapus Opsi"
+                                    @click="removeOptionRow(idx)"
+                                >
+                                    <UIcon name="i-lucide-trash-2" class="size-4" />
+                                </button>
+                            </div>
+                        </div>
+                        <span v-if="attributeModalForm.errors.options" class="text-xs text-red-600">{{ attributeModalForm.errors.options }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 border-t border-default pt-4">
+                        <button type="button" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated" @click="closeManageAttributesModal">
+                            Batal
+                        </button>
+                        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90" :disabled="attributeModalForm.processing">
+                            {{ editingAttribute ? 'Simpan Perubahan' : 'Tambah Atribut' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- MODAL TAMBAH / EDIT VARIAN -->
         <div v-if="showVariantModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
             <div class="max-h-[calc(100vh-2rem)] w-full max-w-4xl overflow-y-auto rounded-xl bg-default p-6 shadow-2xl border border-default space-y-5">
@@ -603,7 +953,7 @@ const dummyDiscounts = [
                 <ProductVariantForm
                     :form="variantForm"
                     :products="productSelectOptions"
-                    :attributes="attributes"
+                    :attributes="productAttributes"
                     :existing-media="editingVariant ? (editingVariant.images || []) : []"
                     :submit-label="editingVariant ? 'Simpan Perubahan' : 'Buat Variant'"
                     :show-cancel="true"
@@ -611,6 +961,79 @@ const dummyDiscounts = [
                     @submit="submitVariantForm"
                     @cancel="closeVariantModal"
                 />
+            </div>
+        </div>
+
+        <!-- MODAL TAMBAH / EDIT PROMO & DISKON -->
+        <div v-if="showDiscountModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+            <div class="max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto rounded-xl bg-default p-6 shadow-2xl border border-default space-y-5">
+                <div class="flex items-center justify-between border-b border-default pb-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-highlighted">
+                            {{ editingDiscount ? 'Edit Promo & Diskon' : 'Tambah Promo / Diskon Baru' }}
+                        </h2>
+                        <p class="text-xs text-muted">Konfigurasi potongan harga untuk varian produk ini.</p>
+                    </div>
+                    <button class="rounded-md p-1.5 hover:bg-elevated" type="button" @click="closeDiscountModal">
+                        <UIcon name="i-lucide-x" class="size-5" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="submitDiscountForm">
+                    <label class="grid gap-1 text-sm">
+                        <span class="font-medium">Varian Produk *</span>
+                        <USelect v-model="discountForm.product_variant_id" :items="variantSelectOptions" class="w-full" placeholder="Pilih Varian" required />
+                        <span v-if="discountForm.errors.product_variant_id" class="text-xs text-red-600">{{ discountForm.errors.product_variant_id }}</span>
+                    </label>
+
+                    <label class="grid gap-1 text-sm">
+                        <span class="font-medium">Berlaku di Toko / Bengkel</span>
+                        <USelect v-model="discountForm.store_id" :items="storeOptions" class="w-full" placeholder="Pilih Toko Spesifik atau Global" />
+                        <span class="text-xs text-muted">Jika memilih "Semua Toko (Global)", promo ini berlaku untuk seluruh cabang toko.</span>
+                        <span v-if="discountForm.errors.store_id" class="text-xs text-red-600">{{ discountForm.errors.store_id }}</span>
+                    </label>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="grid gap-1 text-sm">
+                            <span class="font-medium">Nama Promo (Jenis Diskon) *</span>
+                            <USelect v-model="discountForm.discount_type_id" :items="discountTypeOptions" class="w-full" placeholder="Pilih Jenis Diskon" required />
+                            <span v-if="discountForm.errors.discount_type_id" class="text-xs text-red-600">{{ discountForm.errors.discount_type_id }}</span>
+                        </label>
+
+                        <label class="grid gap-1 text-sm">
+                            <span class="font-medium">Tipe Potongan *</span>
+                            <USelect v-model="discountForm.type" :items="[{ label: 'Persentase (%)', value: 'percent' }, { label: 'Nominal (Rp)', value: 'amount' }]" class="w-full" required />
+                            <span v-if="discountForm.errors.type" class="text-xs text-red-600">{{ discountForm.errors.type }}</span>
+                        </label>
+                    </div>
+
+                    <label class="grid gap-1 text-sm">
+                        <span class="font-medium">Nilai Diskon *</span>
+                        <div class="relative">
+                            <input
+                                v-model="discountForm.value"
+                                class="w-full rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                required
+                            />
+                        </div>
+                        <span class="text-xs text-muted">
+                            {{ discountForm.type === 'percent' ? 'Masukkan angka persen (contoh: 10 untuk 10%)' : 'Masukkan jumlah nominal Rupiah (contoh: 15000)' }}
+                        </span>
+                        <span v-if="discountForm.errors.value" class="text-xs text-red-600">{{ discountForm.errors.value }}</span>
+                    </label>
+
+                    <div class="flex items-center justify-end gap-3 border-t border-default pt-4">
+                        <button type="button" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated" @click="closeDiscountModal">
+                            Batal
+                        </button>
+                        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90" :disabled="discountForm.processing">
+                            {{ editingDiscount ? 'Simpan Perubahan' : 'Tambah Diskon' }}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

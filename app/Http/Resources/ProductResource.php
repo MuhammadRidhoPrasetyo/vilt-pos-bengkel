@@ -42,6 +42,14 @@ class ProductResource extends JsonResource
                 'id' => $this->unit?->id,
                 'name' => $this->unit?->name,
             ]),
+            'attributes' => $this->whenLoaded('attributes', fn () => $this->attributes->map(fn ($attribute) => [
+                'id' => $attribute->id,
+                'name' => $attribute->name,
+                'options' => $attribute->relationLoaded('options') ? $attribute->options->map(fn ($option) => [
+                    'id' => $option->id,
+                    'value' => $option->value,
+                ])->values() : [],
+            ])->values()),
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }

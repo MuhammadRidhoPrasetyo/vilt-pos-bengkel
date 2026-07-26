@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\DiscountType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class DiscountTypeRepository
 {
@@ -15,6 +16,11 @@ class DiscountTypeRepository
             ->latest()
             ->paginate(10)
             ->withQueryString();
+    }
+
+    public function options(): Collection
+    {
+        return DiscountType::query()->latest()->get(['id', 'name']);
     }
 
     public function create(array $data): DiscountType

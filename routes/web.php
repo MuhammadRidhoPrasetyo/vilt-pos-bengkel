@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CashFlowCategoryController;
 use App\Http\Controllers\DiscountTypeController;
@@ -8,8 +7,10 @@ use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PartnerRoleController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductDiscountController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StoreController;
@@ -35,12 +36,15 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('discount-types', DiscountTypeController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('units', UnitController::class);
-    Route::resource('attributes', AttributeController::class);
     Route::resource('payments', PaymentController::class);
     Route::resource('cash-flow-categories', CashFlowCategoryController::class);
     Route::resource('product-categories', ProductCategoryController::class);
     Route::resource('products', ProductController::class);
+    Route::post('products/{product}/attributes', [ProductAttributeController::class, 'store'])->name('products.attributes.store');
+    Route::put('product-attributes/{attribute}', [ProductAttributeController::class, 'update'])->name('product-attributes.update');
+    Route::delete('product-attributes/{attribute}', [ProductAttributeController::class, 'destroy'])->name('product-attributes.destroy');
     Route::resource('product-variants', ProductVariantController::class);
+    Route::resource('product-discounts', ProductDiscountController::class);
     Route::resource('warehouses', WarehouseController::class);
     Route::resource('warehouse-locations', WarehouseLocationController::class);
     Route::resource('roles', RoleController::class);

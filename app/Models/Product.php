@@ -50,6 +50,11 @@ class Product extends BaseModel implements HasMedia
         return $this->hasMany(ProductVariant::class);
     }
 
+    public function attributes(): HasMany
+    {
+        return $this->hasMany(Attribute::class);
+    }
+
     public function displayReceiptName(): EloquentAttribute
     {
         return EloquentAttribute::make(

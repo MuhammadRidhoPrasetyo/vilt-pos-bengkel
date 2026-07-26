@@ -9,8 +9,10 @@ use App\Http\Resources\ProductVariantResource;
 use App\Models\Product;
 use App\Repositories\AttributeRepository;
 use App\Repositories\BrandRepository;
+use App\Repositories\DiscountTypeRepository;
 use App\Repositories\ProductCategoryRepository;
 use App\Repositories\ProductRepository;
+use App\Repositories\StoreRepository;
 use App\Repositories\UnitRepository;
 use App\Services\ProductService;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +28,8 @@ class ProductController extends Controller
         private readonly BrandRepository $brands,
         private readonly UnitRepository $units,
         private readonly AttributeRepository $attributes,
+        private readonly StoreRepository $stores,
+        private readonly DiscountTypeRepository $discountTypes,
         private readonly ProductService $service
     ) {}
 
@@ -38,6 +42,7 @@ class ProductController extends Controller
                 'productCategories' => $this->productCategories->options()->map(fn ($category) => ['label' => $category->name, 'value' => $category->id]),
                 'brands' => $this->brands->options()->map(fn ($brand) => ['label' => $brand->name, 'value' => $brand->id]),
                 'units' => $this->units->options()->map(fn ($unit) => ['label' => $unit->name, 'value' => $unit->id]),
+                'attributes' => $this->attributes->options()->map(fn ($attribute) => ['label' => $attribute->name, 'value' => $attribute->id]),
             ],
             'config' => [
                 'title' => 'Products',
@@ -79,10 +84,15 @@ class ProductController extends Controller
             'brand:id,name',
             'unit:id,name',
             'media',
+            'attributes',
+            'attributes.options:id,attribute_id,value',
             'variants',
             'variants.media',
             'variants.attributeOptions:id,attribute_id,value',
             'variants.attributeOptions.attribute:id,name',
+            'variants.discounts',
+            'variants.discounts.store:id,name',
+            'variants.discounts.discountType:id,name',
         ]);
 
         return Inertia::render('products/show', [
@@ -92,6 +102,8 @@ class ProductController extends Controller
                 'productCategories' => $this->productCategories->options()->map(fn ($category) => ['label' => $category->name, 'value' => $category->id]),
                 'brands' => $this->brands->options()->map(fn ($brand) => ['label' => $brand->name, 'value' => $brand->id]),
                 'units' => $this->units->options()->map(fn ($unit) => ['label' => $unit->name, 'value' => $unit->id]),
+                'stores' => $this->stores->options()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
+                'discountTypes' => $this->discountTypes->options()->map(fn ($discountType) => ['label' => $discountType->name, 'value' => $discountType->id]),
             ],
             'attributes' => $this->attributes->options()->map(fn ($attribute) => [
                 'id' => $attribute->id,

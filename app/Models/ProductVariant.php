@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute as EloquentAttribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -47,6 +48,11 @@ class ProductVariant extends BaseModel implements HasMedia
     public function attributeOptions(): BelongsToMany
     {
         return $this->belongsToMany(AttributeOption::class, 'product_variant_attributes');
+    }
+
+    public function discounts(): HasMany
+    {
+        return $this->hasMany(ProductDiscount::class);
     }
 
     public function displayReceiptName(): EloquentAttribute

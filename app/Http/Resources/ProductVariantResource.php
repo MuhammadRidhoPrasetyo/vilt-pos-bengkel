@@ -50,6 +50,19 @@ class ProductVariantResource extends JsonResource
                 'value' => $option->value,
                 'label' => trim(($option->attribute?->name ? $option->attribute->name.' : ' : '').$option->value),
             ])->values()),
+            'discounts' => $this->whenLoaded('discounts', fn () => $this->discounts->map(fn ($discount) => [
+                'id' => $discount->id,
+                'product_variant_id' => $discount->product_variant_id,
+                'store_id' => $discount->store_id,
+                'store_name' => $discount->store?->name ?? 'Semua Toko (Global)',
+                'discount_type_id' => $discount->discount_type_id,
+                'discount_type_name' => $discount->discountType?->name ?? '-',
+                'type' => $discount->type,
+                'type_label' => $discount->type === 'percent' ? 'Persentase (%)' : 'Nominal (Rp)',
+                'value' => (float) $discount->value,
+                'formatted_value' => $discount->type === 'percent' ? $discount->value.'%' : 'Rp '.number_format($discount->value, 0, ',', '.'),
+                'created_at' => $discount->created_at?->toDateTimeString(),
+            ])->values()),
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }

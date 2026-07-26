@@ -252,10 +252,6 @@ const links = computed(() => [
                     onSelect: () => navigateTo('/units'),
                 },
                 {
-                    label: 'Atribut',
-                    onSelect: () => navigateTo('/attributes'),
-                },
-                {
                     label: 'Pembayaran',
                     onSelect: () => navigateTo('/payments'),
                 },
