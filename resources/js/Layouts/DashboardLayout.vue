@@ -295,6 +295,12 @@ const links = computed(() => [
             ],
         },
         {
+            label: 'Servis / SPK',
+            icon: 'i-lucide-wrench',
+            active: currentPath.value.startsWith('/services'),
+            onSelect: () => navigateTo('/services'),
+        },
+        {
             label: 'Gudang',
             icon: 'i-lucide-warehouse',
             active: currentPath.value.startsWith('/warehouses')

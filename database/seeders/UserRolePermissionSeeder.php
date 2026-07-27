@@ -141,9 +141,13 @@ class UserRolePermissionSeeder extends Seeder
                 'printers.edit' => 'Mengubah konfigurasi printer toko',
                 'printers.delete' => 'Menghapus konfigurasi printer toko',
 
-                // POS & Work Orders
+                // POS & Work Orders / Services
                 'pos.view' => 'Mengakses menu kasir / POS',
                 'pos.create' => 'Melakukan transaksi penjualan kasir',
+                'services.view' => 'Melihat daftar Surat Perintah Kerja (SPK) / Servis',
+                'services.create' => 'Membuat SPK perbaikan / servis kendaraan baru',
+                'services.edit' => 'Mengubah data SPK / menambah suku cadang & jasa servis',
+                'services.delete' => 'Membatalkan / menghapus SPK servis',
                 'work-orders.view' => 'Melihat daftar Surat Perintah Kerja (SPK) / Perbaikan',
                 'work-orders.create' => 'Membuat SPK perbaikan kendaraan baru',
                 'work-orders.edit' => 'Mengubah data SPK / menambah suku cadang servis',

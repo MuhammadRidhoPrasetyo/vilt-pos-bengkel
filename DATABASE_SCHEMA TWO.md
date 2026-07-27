@@ -904,107 +904,59 @@ Tabel master kendaraan per toko. Kendaraan tidak wajib terikat ke customer perma
 
 ### 📋 service_orders
 
-Tabel order service (bengkel).
+Tabel utama order service / Surat Perintah Kerja (SPK) bengkel. Memuat data SPK sekaligus snapshot data kendaraan dan pelanggan.
 
-| Field             | Type          | Attributes                                                                                              | Keterangan               |
-| ----------------- | ------------- | ------------------------------------------------------------------------------------------------------- | ------------------------ |
-| id                | uuid          | PRIMARY KEY                                                                                             |                          |
-| number            | string        | UNIQUE                                                                                                  | Nomor SO (SO-202511-001) |
-| store_id          | uuid          | FK (stores)                                                                                             | Toko/bengkel             |
-| customer_id       | uuid          | NULLABLE, FK (partners)                                                                                | Pelanggan                |
-| status            | enum          | VALUES: 'checkin', 'in_progress', 'waiting_parts', 'ready', 'invoiced', 'cancelled', DEFAULT: 'checkin' | Status global            |
-| checkin_at        | dateTime      |                                                                                                         | Waktu check-in           |
-| completed_at      | dateTime      | NULLABLE                                                                                                | Waktu selesai            |
-| general_complaint | text          | NULLABLE                                                                                                | Keluhan umum             |
-| estimated_total   | decimal(15,2) | DEFAULT: 0                                                                                              | Estimasi total           |
-| transaction_id    | uuid          | NULLABLE, FK (transactions)                                                                             | Transaksi POS            |
-| created_at        | timestamp     |                                                                                                         |                          |
-| updated_at        | timestamp     |                                                                                                         |                          |
-
----
-
-### 📋 service_order_units
-
-Tabel unit/kendaraan dalam service order.
-
-| Field               | Type          | Attributes                                                                                                           | Keterangan          |
-| ------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| id                  | uuid          | PRIMARY KEY                                                                                                          |                     |
-| service_order_id    | uuid          | FK (service_orders, CASCADE), INDEX                                                                                  | Service order       |
-| vehicle_id          | uuid          | FK (vehicles)                                                                                                        | Kendaraan           |
-| status              | enum          | VALUES: 'checkin', 'diagnosis', 'in_progress', 'waiting_parts', 'ready', 'invoiced', 'cancelled', DEFAULT: 'checkin' | Status unit         |
-| checkin_at          | dateTime      |                                                                                                                      | Waktu check-in      |
-| completed_at        | dateTime      | NULLABLE                                                                                                             | Waktu selesai       |
-| plate_number        | string        |                                                                                                                      | Nomor polisi        |
-| brand               | string        | NULLABLE                                                                                                             | Merk                |
-| model               | string        | NULLABLE                                                                                                             | Model               |
-| year                | year          | NULLABLE                                                                                                             | Tahun kendaraan     |
-| color               | string        | NULLABLE                                                                                                             | Warna               |
-| odometer            | unsignedInteger | NULLABLE                                                                                                           | Kilometer saat masuk |
-| complaint           | text          | NULLABLE                                                                                                             | Keluhan spesifik    |
-| diagnosis           | text          | NULLABLE                                                                                                             | Diagnosis montir    |
-| work_done           | text          | NULLABLE                                                                                                             | Ringkasan pekerjaan |
-| estimated_total     | decimal(15,2) | DEFAULT: 0                                                                                                           | Estimasi total      |
-| created_at          | timestamp     |                                                                                                                      |                     |
-| updated_at          | timestamp     |                                                                                                                      |                     |
-
----
-
-### 📋 service_order_unit_mechanics
-
-Tabel montir yang menangani unit.
-
-| Field                 | Type         | Attributes                                       | Keterangan      |
-| --------------------- | ------------ | ------------------------------------------------ | --------------- |
-| service_order_unit_id | uuid         | FK (service_order_units, CASCADE)                | Service unit    |
-| mechanic_id           | bigint       | FK (users)                                       | Montir/user     |
-| role                  | enum         | VALUES: 'leader', 'assistant', DEFAULT: 'leader' | Peran           |
-| work_portion          | decimal(5,2) | NULLABLE                                         | Porsi pekerjaan |
-| created_at            | timestamp    |                                                  |                 |
-| updated_at            | timestamp    |                                                  |                 |
-
-**Unique Index:** (service_order_unit_id, mechanic_id)
+| Field | Type | Attributes | Keterangan |
+| --- | --- | --- | --- |
+| id | uuid | PRIMARY KEY | |
+| number | string | UNIQUE | Nomor SPK (SO-202511-001) |
+| store_id | uuid | FK (stores), INDEX | Toko/bengkel |
+| customer_id | uuid | NULLABLE, FK (partners, SET NULL) | Pelanggan terdaftar (opsional) |
+| customer_name | string | | Snapshot nama pelanggan |
+| customer_phone | string | NULLABLE | Snapshot telepon pelanggan |
+| vehicle_id | uuid | NULLABLE, FK (vehicles, SET NULL) | Kendaraan terdaftar (opsional) |
+| plate_number | string | INDEX | Nomor polisi kendaraan (KT 1234 AB) |
+| vehicle_brand | string | NULLABLE | Merk kendaraan (Honda, Yamaha, Toyota, dll.) |
+| vehicle_model | string | NULLABLE | Model kendaraan (Beat, Vario, Avanza, dll.) |
+| year | year | NULLABLE | Tahun kendaraan |
+| color | string | NULLABLE | Warna kendaraan |
+| odometer | unsignedInteger | NULLABLE | Kilometer (KM) saat kendaraan masuk |
+| status | enum | VALUES: 'checkin', 'diagnosis', 'in_progress', 'waiting_parts', 'ready', 'invoiced', 'cancelled', DEFAULT: 'checkin' | Status global SPK |
+| checkin_at | dateTime | | Waktu check-in kendaraan |
+| completed_at | dateTime | NULLABLE | Waktu selesai perbaikan |
+| general_complaint | text | NULLABLE | Keluhan umum / permintaan pelanggan |
+| diagnosis | text | NULLABLE | Diagnosis awal / rangkuman mekanik |
+| estimated_total | decimal(15,2) | DEFAULT: 0 | Estimasi total biaya |
+| transaction_id | uuid | NULLABLE, FK (transactions) | Transaksi POS saat dilunasi |
+| created_at | timestamp | | |
+| updated_at | timestamp | | |
 
 ---
 
 ### 📋 service_order_items
 
-Tabel item dalam service order unit.
+Tabel item rincian suku cadang (part) dan penugasan jasa mekanik (labor) dalam SPK.
 
-| Field                 | Type            | Attributes                               | Keterangan                    |
-| --------------------- | --------------- | ---------------------------------------- | ----------------------------- |
-| id                    | uuid            | PRIMARY KEY                              |                               |
-| service_order_unit_id | uuid            | FK (service_order_units, CASCADE), INDEX | Service unit                  |
-| item_type             | enum            | VALUES: 'part', 'labor'                  | Snapshot tipe item            |
-| product_variant_id    | uuid            | NULLABLE, FK (product_variants)          | Varian Produk (opsional)      |
-| description           | string          | NULLABLE                                 | Deskripsi (untuk jasa custom) |
-| quantity              | unsignedInteger | DEFAULT: 1                               | Jumlah                        |
-| unit_price            | decimal(12,2)   | DEFAULT: 0                               | Harga per unit                |
-| line_total            | decimal(15,2)   | DEFAULT: 0                               | Total line                    |
-| created_at            | timestamp       |                                          |                               |
-| updated_at            | timestamp       |                                          |                               |
+| Field | Type | Attributes | Keterangan |
+| --- | --- | --- | --- |
+| id | uuid | PRIMARY KEY | |
+| service_order_id | uuid | FK (service_orders, CASCADE), INDEX | SPK terkait |
+| item_type | enum | VALUES: 'part', 'labor' | Tipe item (Suku cadang atau Jasa) |
+| product_variant_id | uuid | NULLABLE, FK (product_variants) | Varian Produk / Jasa Katalog |
+| description | string | | Deskripsi nama suku cadang / jenis jasa |
+| quantity | unsignedInteger | DEFAULT: 1 | Jumlah |
+| unit_price | decimal(12,2) | DEFAULT: 0 | Harga per unit / biaya jasa |
+| line_total | decimal(15,2) | DEFAULT: 0 | Total baris (quantity × unit_price) |
+| mechanic_id | bigint | NULLABLE, FK (users), INDEX | **Mekanik yang mengerjakan jasa ini** |
+| assigned_at | timestamp | NULLABLE | **Waktu penugasan / pengerjaan jasa** |
+| created_at | timestamp | | |
+| updated_at | timestamp | | |
 
-**Catatan:**
+**Catatan Penugasan Mekanik & Laporan Bulanan:**
 
-- Jika `product_variant_id` diisi, `item_type` mengikuti `products.item_type` dari varian produk tersebut.
-- Jika `product_variant_id` kosong, `item_type` tetap diperlukan untuk mencatat item custom seperti jasa tambahan manual.
-
----
-
-### 📋 service_order_customers
-
-Tabel snapshot data pelanggan dalam service order.
-
-| Field            | Type      | Attributes                        | Keterangan    |
-| ---------------- | --------- | --------------------------------- | ------------- |
-| id               | uuid      | PRIMARY KEY                       |               |
-| service_order_id | uuid      | FK (service_orders, CASCADE)      | Service order |
-| customer_id      | uuid      | NULLABLE, FK (partners, SET NULL) | Pelanggan     |
-| name             | string    |                                   | Nama          |
-| phone            | string    | NULLABLE                          | Nomor telepon |
-| address          | text      | NULLABLE                          | Alamat        |
-| created_at       | timestamp |                                   |               |
-| updated_at       | timestamp |                                   |               |
+- Field `mechanic_id` dan `assigned_at` dipasang langsung pada `service_order_items` (khusus item bertipe `'labor'`).
+- **Mendukung Kasus Menginap Beda Hari / Beda Mekanik:** Jika kendaraan menginap 2 hari dan pengerjaan dilakukan oleh mekanik berbeda (misal: Hari 1 Jasa A oleh Mekanik A, Hari 2 Jasa B oleh Mekanik B), masing-masing item jasa mencatat mekanik & tanggal penugasan secara terpisah.
+- **Laporan Komisi / Omzet Jasa Mekanik:** Owner dapat dengan mudah menarik laporan omzet jasa per mekanik di akhir bulan (`SUM(line_total)` di mana `item_type = 'labor'` grouped by `mechanic_id` & `assigned_at`).
 
 ---
 

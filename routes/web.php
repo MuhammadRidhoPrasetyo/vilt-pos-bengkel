@@ -17,6 +17,7 @@ use App\Http\Controllers\ProductStockController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
@@ -52,6 +53,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('product-stocks', ProductStockController::class);
     Route::resource('product-prices', ProductPriceController::class);
     Route::resource('purchases', PurchaseController::class);
+    Route::resource('services', ServiceOrderController::class);
     Route::get('printers/{printer}/test', [PrinterController::class, 'test'])->name('printers.test');
     Route::resource('printers', PrinterController::class);
     Route::resource('warehouses', WarehouseController::class);
