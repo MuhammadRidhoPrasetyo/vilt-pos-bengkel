@@ -267,11 +267,13 @@ const links = computed(() => [
             active: currentPath.value.startsWith('/product-categories')
                 || currentPath.value.startsWith('/products')
                 || currentPath.value.startsWith('/product-variants')
-                || currentPath.value.startsWith('/product-stocks'),
+                || currentPath.value.startsWith('/product-stocks')
+                || currentPath.value.startsWith('/purchases'),
             defaultOpen: currentPath.value.startsWith('/product-categories')
                 || currentPath.value.startsWith('/products')
                 || currentPath.value.startsWith('/product-variants')
-                || currentPath.value.startsWith('/product-stocks'),
+                || currentPath.value.startsWith('/product-stocks')
+                || currentPath.value.startsWith('/purchases'),
             type: 'trigger',
             children: [
                 {
@@ -285,6 +287,10 @@ const links = computed(() => [
                 {
                     label: 'Stok Produk',
                     onSelect: () => navigateTo('/product-stocks'),
+                },
+                {
+                    label: 'Pembelian / Restok',
+                    onSelect: () => navigateTo('/purchases'),
                 },
             ],
         },
@@ -304,6 +310,19 @@ const links = computed(() => [
                 {
                     label: 'Lokasi Warehouse',
                     onSelect: () => navigateTo('/warehouse-locations'),
+                },
+            ],
+        },
+        {
+            label: 'Pengaturan',
+            icon: 'i-lucide-settings',
+            active: currentPath.value.startsWith('/printers'),
+            defaultOpen: currentPath.value.startsWith('/printers'),
+            type: 'trigger',
+            children: [
+                {
+                    label: 'Printer Toko',
+                    onSelect: () => navigateTo('/printers'),
                 },
             ],
         },

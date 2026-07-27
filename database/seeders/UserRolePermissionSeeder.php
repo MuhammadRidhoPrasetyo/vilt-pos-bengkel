@@ -123,7 +123,7 @@ class UserRolePermissionSeeder extends Seeder
                 'product-stocks.edit' => 'Mengubah data stok barang',
                 'product-stocks.delete' => 'Menghapus catatan stok',
 
-                // Warehouses
+                // Warehouses, Purchases, & Printers
                 'warehouses.view' => 'Melihat daftar gudang',
                 'warehouses.create' => 'Menambahkan gudang baru',
                 'warehouses.edit' => 'Mengubah data gudang',
@@ -132,6 +132,14 @@ class UserRolePermissionSeeder extends Seeder
                 'warehouse-locations.create' => 'Menambahkan lokasi rak gudang baru',
                 'warehouse-locations.edit' => 'Mengubah lokasi rak gudang',
                 'warehouse-locations.delete' => 'Menghapus lokasi rak gudang',
+                'purchases.view' => 'Melihat daftar dan detail transaksi pembelian supplier',
+                'purchases.create' => 'Membuat transaksi pembelian baru dari supplier',
+                'purchases.edit' => 'Mengubah data transaksi pembelian',
+                'purchases.delete' => 'Menghapus / membatalkan transaksi pembelian',
+                'printers.view' => 'Melihat daftar dan konfigurasi printer toko',
+                'printers.create' => 'Menambahkan konfigurasi printer toko baru',
+                'printers.edit' => 'Mengubah konfigurasi printer toko',
+                'printers.delete' => 'Menghapus konfigurasi printer toko',
 
                 // POS & Work Orders
                 'pos.view' => 'Mengakses menu kasir / POS',

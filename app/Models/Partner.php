@@ -19,6 +19,6 @@ class Partner extends BaseModel
 
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(PartnerRole::class);
+        return $this->belongsToMany(PartnerRole::class, 'partner_role_partner');
     }
 }
