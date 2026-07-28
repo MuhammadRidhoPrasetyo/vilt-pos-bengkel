@@ -17,12 +17,16 @@ class ProductVariantResource extends JsonResource
             'product_id' => $this->product_id,
             'sku' => $this->sku,
             'barcode' => $this->barcode,
+            'name' => $this->display_receipt_name,
             'name_suffix' => $this->name_suffix,
             'receipt_name' => $this->receipt_name,
             'display_receipt_name' => $this->display_receipt_name,
             'default_purchase_price' => $this->default_purchase_price,
             'default_selling_price' => $this->default_selling_price,
+            'price' => (float) ($this->default_selling_price ?? 0),
             'is_active' => $this->is_active,
+            'image_url' => $this->getFirstMediaUrl('images', 'thumb')
+                ?: ($this->product?->getFirstMediaUrl('images', 'thumb') ?: null),
             'images' => $this->relationLoaded('media') ? $this->getMedia('images')->map(fn ($media) => [
                 'id' => $media->id,
                 'url' => $media->getUrl(),
@@ -34,6 +38,11 @@ class ProductVariantResource extends JsonResource
                 'id' => $this->product?->id,
                 'name' => $this->product?->name,
                 'receipt_name' => $this->product?->receipt_name,
+                'item_type' => $this->product?->item_type,
+                'category_id' => $this->product?->product_category_id,
+                'category_name' => $this->product?->relationLoaded('category') ? $this->product->category?->name : null,
+                'brand_name' => $this->product?->relationLoaded('brand') ? $this->product->brand?->name : null,
+                'unit_name' => $this->product?->relationLoaded('unit') ? $this->product->unit?->name : null,
                 'images' => $this->product?->relationLoaded('media') ? $this->product->getMedia('images')->map(fn ($media) => [
                     'id' => $media->id,
                     'url' => $media->getUrl(),

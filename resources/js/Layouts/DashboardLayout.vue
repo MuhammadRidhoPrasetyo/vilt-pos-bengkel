@@ -1,5 +1,5 @@
 <script setup>
-import { router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { useAppConfig } from '#imports';
 import { useToast } from '@nuxt/ui/composables';
 import { computed, ref, watch } from 'vue';
@@ -426,6 +426,7 @@ const formatTimeAgo = (date) => {
 </script>
 
 <template>
+    <Head :title="title" />
     <UDashboardGroup unit="rem">
         <UDashboardSidebar
             id="default"

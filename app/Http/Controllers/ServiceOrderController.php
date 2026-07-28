@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateServiceOrderRequest;
 use App\Http\Resources\ProductVariantResource;
 use App\Http\Resources\ServiceOrderResource;
 use App\Http\Resources\UserResource;
+use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\ServiceOrder;
 use App\Models\User;
@@ -68,8 +69,14 @@ class ServiceOrderController extends Controller
             ->orderBy('name')
             ->get();
 
+        $categories = ProductCategory::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($c) => ['label' => $c->name, 'value' => $c->id]);
+
         $variants = ProductVariant::query()
-            ->with(['product.category', 'product.brand', 'product.unit'])
+            ->with(['product.category', 'product.brand', 'product.unit', 'media', 'product.media'])
             ->latest()
             ->get();
 
@@ -77,6 +84,7 @@ class ServiceOrderController extends Controller
             'options' => [
                 'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
                 'mechanics' => UserResource::collection($mechanics),
+                'categories' => $categories,
             ],
             'variants' => ProductVariantResource::collection($variants),
         ]);
@@ -91,8 +99,14 @@ class ServiceOrderController extends Controller
             ->orderBy('name')
             ->get();
 
+        $categories = ProductCategory::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($c) => ['label' => $c->name, 'value' => $c->id]);
+
         $variants = ProductVariant::query()
-            ->with(['product.category', 'product.brand', 'product.unit'])
+            ->with(['product.category', 'product.brand', 'product.unit', 'media', 'product.media'])
             ->latest()
             ->get();
 
@@ -101,6 +115,7 @@ class ServiceOrderController extends Controller
             'options' => [
                 'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
                 'mechanics' => UserResource::collection($mechanics),
+                'categories' => $categories,
             ],
             'variants' => ProductVariantResource::collection($variants),
         ]);

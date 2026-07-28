@@ -1,5 +1,5 @@
 <script setup>
-import { router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 defineProps({
@@ -38,45 +38,47 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="flex h-screen w-screen flex-col overflow-hidden bg-slate-950 text-slate-100 antialiased font-sans">
+    <Head :title="title" />
+    <div class="flex min-h-screen w-full flex-col bg-default text-highlighted antialiased font-sans lg:h-screen lg:overflow-hidden">
         <!-- Top Workspace Bar -->
-        <header class="flex h-14 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-900/90 px-4 backdrop-blur-md">
+        <header class="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-default bg-elevated/90 px-3 sm:px-4 backdrop-blur-md">
             <!-- Left Info -->
-            <div class="flex items-center gap-3">
-                <div class="flex size-9 items-center justify-center rounded-lg bg-primary-600 text-white shadow-lg shadow-primary-600/30">
-                    <UIcon name="i-lucide-wrench" class="size-5" />
+            <div class="flex items-center gap-2.5 sm:gap-3">
+                <div class="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 shrink-0">
+                    <UIcon name="i-lucide-wrench" class="size-4 sm:size-5" />
                 </div>
-                <div>
-                    <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-2">
-                        {{ title }}
-                        <span v-if="subtitle" class="rounded bg-slate-800 px-2 py-0.5 text-xs font-mono font-medium text-slate-300">{{ subtitle }}</span>
+                <div class="min-w-0">
+                    <h1 class="text-xs sm:text-sm font-bold tracking-tight text-highlighted flex items-center gap-1.5 truncate">
+                        <span class="truncate">{{ title }}</span>
+                        <span v-if="subtitle" class="hidden sm:inline-block rounded bg-elevated border border-default px-2 py-0.5 text-xs font-mono font-medium text-muted">{{ subtitle }}</span>
                     </h1>
-                    <p class="text-[11px] text-slate-400">Terminal Input SPK & Service Advisor Bengkel</p>
+                    <p class="text-[10px] sm:text-[11px] text-muted truncate">Terminal Input SPK & Service Advisor Bengkel</p>
                 </div>
             </div>
 
             <!-- Right Controls -->
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 sm:gap-4 shrink-0">
                 <!-- Clock -->
-                <div class="hidden sm:flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-1 font-mono text-xs font-semibold text-slate-300">
-                    <UIcon name="i-lucide-clock" class="size-3.5 text-primary-400" />
+                <div class="hidden md:flex items-center gap-1.5 rounded-lg border border-default bg-default px-2.5 py-1 font-mono text-xs font-semibold text-highlighted">
+                    <UIcon name="i-lucide-clock" class="size-3.5 text-primary" />
                     {{ currentTime }}
                 </div>
 
                 <!-- Return to Admin -->
                 <button
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-default bg-default px-2.5 py-1.5 text-xs font-semibold text-highlighted transition-colors hover:bg-elevated"
                     type="button"
                     @click="router.visit('/services')"
                 >
-                    <UIcon name="i-lucide-arrow-left" class="size-4 text-slate-400" />
-                    <span>Kembali ke Admin</span>
+                    <UIcon name="i-lucide-arrow-left" class="size-4 text-muted" />
+                    <span class="hidden sm:inline">Kembali ke Admin</span>
+                    <span class="sm:hidden">Admin</span>
                 </button>
             </div>
         </header>
 
         <!-- Fullscreen Content Slot -->
-        <main class="flex-1 overflow-hidden p-3 bg-slate-950">
+        <main class="flex-1 p-2 sm:p-3 bg-default overflow-y-auto lg:overflow-hidden">
             <slot />
         </main>
     </div>

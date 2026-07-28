@@ -30,7 +30,7 @@ class ServiceOrder extends BaseModel
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class);
+        return $this->belongsTo(CustomerVehicle::class, 'vehicle_id');
     }
 
     public function items(): HasMany

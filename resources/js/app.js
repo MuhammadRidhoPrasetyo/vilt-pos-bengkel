@@ -10,7 +10,10 @@ const savedAppearance = localStorage.getItem('nuxt-ui-appearance') || 'light';
 document.documentElement.classList.toggle('dark', savedAppearance === 'dark');
 document.documentElement.classList.toggle('light', savedAppearance !== 'dark');
 
+const appName = import.meta.env.VITE_APP_NAME || 'POS Bengkel';
+
 createInertiaApp({
+    title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) => {
         const pages = import.meta.glob('./Pages/**/*.vue');
 
