@@ -160,6 +160,39 @@ class ServiceOrderService
         });
     }
 
+    public function updateStatus(ServiceOrder $serviceOrder, string $status, int|string|null $mechanicId = null): ServiceOrder
+    {
+        return DB::transaction(function () use ($serviceOrder, $status, $mechanicId) {
+            $now = now();
+            $completedAt = $serviceOrder->completed_at;
+
+            if ($status === 'ready' || $status === 'invoiced') {
+                $completedAt = $completedAt ?: $now;
+            } else {
+                $completedAt = null;
+            }
+
+            $serviceOrder->update([
+                'status' => $status,
+                'completed_at' => $completedAt,
+            ]);
+
+            if ($mechanicId !== null) {
+                $laborItems = $serviceOrder->items()->where('item_type', 'labor')->get();
+                if ($laborItems->isNotEmpty()) {
+                    foreach ($laborItems as $item) {
+                        $item->update([
+                            'mechanic_id' => $mechanicId,
+                            'assigned_at' => $item->assigned_at ?: $now,
+                        ]);
+                    }
+                }
+            }
+
+            return $serviceOrder->fresh(['store', 'customer', 'items.mechanic', 'items.productVariant.product']);
+        });
+    }
+
     private function generateNumber(Carbon $date): string
     {
         $prefix = 'SO-'.$date->format('Ymd');

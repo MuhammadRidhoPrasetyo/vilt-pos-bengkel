@@ -10,6 +10,7 @@ use App\Http\Resources\UserResource;
 use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\ServiceOrder;
+use App\Models\Store;
 use App\Models\User;
 use App\Repositories\ServiceOrderRepository;
 use App\Repositories\StoreRepository;
@@ -36,6 +37,9 @@ class ServiceOrderController extends Controller
         $endDate = $request->string('end_date')->toString();
 
         $serviceOrders = $this->repository->paginate($search, $status, $storeId, $startDate, $endDate);
+        $activeOrders = $this->repository->getActiveOrders($storeId);
+
+        $mechanics = $this->getScopedMechanics($request, $storeId);
 
         $summary = [
             'total_count' => ServiceOrder::count(),
@@ -48,6 +52,7 @@ class ServiceOrderController extends Controller
 
         return Inertia::render('services/index', [
             'serviceOrders' => ServiceOrderResource::collection($serviceOrders),
+            'activeOrders' => ServiceOrderResource::collection($activeOrders),
             'summary' => $summary,
             'filters' => [
                 'search' => $search,
@@ -58,16 +63,45 @@ class ServiceOrderController extends Controller
             ],
             'options' => [
                 'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
+                'mechanics' => UserResource::collection($mechanics),
             ],
         ]);
     }
 
-    public function create(): Response
+    public function tvDisplay(Request $request): Response
     {
-        $mechanics = User::query()
-            ->select(['id', 'name', 'email'])
-            ->orderBy('name')
-            ->get();
+        $storeId = $request->string('store_id')->toString();
+        $activeOrders = $this->repository->getActiveOrders($storeId);
+
+        $store = null;
+        if ($storeId) {
+            $store = Store::find($storeId);
+        } else {
+            $store = Store::first();
+        }
+
+        return Inertia::render('services/display', [
+            'activeOrders' => ServiceOrderResource::collection($activeOrders),
+            'store' => $store ? ['id' => $store->id, 'name' => $store->name] : null,
+        ]);
+    }
+
+    public function updateStatus(Request $request, string $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:checkin,in_progress,waiting_parts,ready,invoiced,cancelled'],
+            'mechanic_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $serviceOrder = ServiceOrder::findOrFail($id);
+        $this->service->updateStatus($serviceOrder, $validated['status'], $validated['mechanic_id'] ?? null);
+
+        return back()->with('success', 'Status SPK Servis berhasil diperbarui.');
+    }
+
+    public function create(Request $request): Response
+    {
+        $mechanics = $this->getScopedMechanics($request);
 
         $categories = ProductCategory::query()
             ->select(['id', 'name'])
@@ -90,14 +124,11 @@ class ServiceOrderController extends Controller
         ]);
     }
 
-    public function edit(string $id): Response
+    public function edit(Request $request, string $id): Response
     {
         $serviceOrder = $this->repository->findWithRelations($id);
 
-        $mechanics = User::query()
-            ->select(['id', 'name', 'email'])
-            ->orderBy('name')
-            ->get();
+        $mechanics = $this->getScopedMechanics($request, $serviceOrder->store_id);
 
         $categories = ProductCategory::query()
             ->select(['id', 'name'])
@@ -119,6 +150,23 @@ class ServiceOrderController extends Controller
             ],
             'variants' => ProductVariantResource::collection($variants),
         ]);
+    }
+
+    private function getScopedMechanics(Request $request, ?string $storeId = null)
+    {
+        $userStoreId = $request->user()?->store_id;
+        $targetStoreId = $userStoreId ?: ($storeId ?: null);
+
+        return User::query()
+            ->select(['id', 'name', 'email', 'store_id'])
+            ->when($targetStoreId, function ($q) use ($targetStoreId) {
+                $q->where(function ($sq) use ($targetStoreId) {
+                    $sq->where('store_id', $targetStoreId)
+                        ->orWhereNull('store_id');
+                });
+            })
+            ->orderBy('name')
+            ->get();
     }
 
     public function show(string $id): Response

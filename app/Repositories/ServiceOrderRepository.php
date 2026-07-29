@@ -39,4 +39,14 @@ class ServiceOrderRepository
             ->with(['store', 'customer', 'vehicle', 'items.mechanic', 'items.productVariant.product'])
             ->findOrFail($id);
     }
+
+    public function getActiveOrders(?string $storeId = null)
+    {
+        return ServiceOrder::query()
+            ->with(['store', 'customer', 'items.mechanic', 'items.productVariant.product'])
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->whereIn('status', ['checkin', 'in_progress', 'waiting_parts', 'ready'])
+            ->orderBy('checkin_at', 'asc')
+            ->get();
+    }
 }

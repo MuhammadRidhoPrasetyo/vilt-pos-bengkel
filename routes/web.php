@@ -53,6 +53,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('product-stocks', ProductStockController::class);
     Route::resource('product-prices', ProductPriceController::class);
     Route::resource('purchases', PurchaseController::class);
+    Route::get('services/display', [ServiceOrderController::class, 'tvDisplay'])->name('services.display');
+    Route::patch('services/{service}/status', [ServiceOrderController::class, 'updateStatus'])->name('services.status.update');
     Route::resource('services', ServiceOrderController::class);
     Route::get('printers/{printer}/test', [PrinterController::class, 'test'])->name('printers.test');
     Route::resource('printers', PrinterController::class);
