@@ -970,34 +970,39 @@ Transactions dibuat setelah service_orders agar service_order_id bisa aman. Deta
 
 Tabel transaksi (penjualan).
 
-| Field                        | Type          | Attributes                                                             | Keterangan                         |
-| ---------------------------- | ------------- | ---------------------------------------------------------------------- | ---------------------------------- |
-| id                           | uuid          | PRIMARY KEY                                                            |                                    |
-| number                       | string        | UNIQUE                                                                 | Nomor transaksi (POS-20250224-001) |
-| store_id                     | uuid          | FK (stores), INDEX                                                     | Toko                               |
-| user_id                      | bigint        | FK (users), INDEX                                                      | Kasir                              |
-| customer_id                  | uuid          | NULLABLE, FK (partners)                                               | Pelanggan                          |
-| payment_id                   | uuid          | NULLABLE, FK (payments)                                                | Metode pembayaran                  |
-| transaction_date             | dateTime      | INDEX                                                                  | Tanggal transaksi                  |
-| type                         | enum          | VALUES: 'retail', 'service', 'internal', 'warranty', DEFAULT: 'retail' | Tipe transaksi                     |
-| service_order_id             | uuid          | NULLABLE, FK (service_orders)                                          | Service order (jika tipe service)  |
-| subtotal                     | decimal(15,2) | DEFAULT: 0                                                             | Subtotal sebelum diskon item       |
-| item_discount_total          | decimal(15,2) | DEFAULT: 0                                                             | Total diskon item                  |
-| subtotal_after_item_discount | decimal(15,2) | DEFAULT: 0                                                             | Subtotal setelah diskon item       |
-| universal_discount_mode      | enum          | VALUES: 'percent', 'amount', NULLABLE                                  | Mode diskon universal              |
-| universal_discount_value     | decimal(12,2) | NULLABLE                                                               | Nilai diskon universal             |
-| universal_discount_amount    | decimal(15,2) | DEFAULT: 0                                                             | Nominal diskon universal           |
-| tax_total                    | decimal(15,2) | DEFAULT: 0                                                             | Total pajak                        |
-| grand_total                  | decimal(15,2) | DEFAULT: 0                                                             | Total yang harus dibayar           |
-| paid_amount                  | decimal(15,2) | DEFAULT: 0                                                             | Uang yang diterima                 |
-| change_amount                | decimal(15,2) | DEFAULT: 0                                                             | Kembalian                          |
-| payment_status               | enum          | VALUES: 'unpaid', 'partial', 'paid', 'refunded', DEFAULT: 'paid'       | Status pembayaran                  |
-| total_cost                   | decimal(15,2) | DEFAULT: 0                                                             | Total biaya/modal                  |
-| total_profit                 | decimal(15,2) | DEFAULT: 0                                                             | Total laba                         |
-| status                       | enum          | VALUES: 'draft', 'completed', 'void', DEFAULT: 'completed'             | Status transaksi                   |
-| note                         | text          | NULLABLE                                                               | Catatan                            |
-| created_at                   | timestamp     |                                                                        |                                    |
-| updated_at                   | timestamp     |                                                                        |                                    |
+| Field                        | Type          | Attributes                                                             | Keterangan                                                              |
+| ---------------------------- | ------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| id                           | uuid          | PRIMARY KEY                                                            |                                                                         |
+| number                       | string        | UNIQUE                                                                 | Nomor transaksi (POS-20250224-001)                                      |
+| store_id                     | uuid          | FK (stores), INDEX                                                     | Toko                                                                    |
+| user_id                      | uuid          | FK (users), INDEX                                                      | Kasir                                                                   |
+| customer_id                  | uuid          | NULLABLE, FK (partners)                                                | Pelanggan                                                               |
+| payment_id                   | uuid          | NULLABLE, FK (payments)                                                | Metode pembayaran utama                                                 |
+| transaction_date             | dateTime      | INDEX                                                                  | Tanggal transaksi                                                       |
+| type                         | enum          | VALUES: 'retail', 'service', 'internal', 'warranty', DEFAULT: 'retail' | Tipe transaksi                                                          |
+| service_order_id             | uuid          | NULLABLE, FK (service_orders)                                          | Service order (jika tipe service)                                       |
+| subtotal                     | decimal(15,2) | DEFAULT: 0                                                             | Subtotal sebelum diskon item                                            |
+| item_discount_total          | decimal(15,2) | DEFAULT: 0                                                             | Total diskon item                                                       |
+| subtotal_after_item_discount | decimal(15,2) | DEFAULT: 0                                                             | Subtotal setelah diskon item                                            |
+| universal_discount_mode      | enum          | VALUES: 'percent', 'amount', NULLABLE                                  | Mode diskon universal                                                   |
+| universal_discount_value     | decimal(12,2) | NULLABLE                                                               | Nilai diskon universal                                                  |
+| universal_discount_amount    | decimal(15,2) | DEFAULT: 0                                                             | Nominal diskon universal                                                |
+| tax_rate                     | decimal(5,2)  | NULLABLE, DEFAULT: 0                                                   | Persentase pajak (%)                                                    |
+| tax_total                    | decimal(15,2) | DEFAULT: 0                                                             | Total nominal pajak                                                     |
+| grand_total                  | decimal(15,2) | DEFAULT: 0                                                             | Total yang harus dibayar                                                |
+| paid_amount                  | decimal(15,2) | DEFAULT: 0                                                             | Uang yang diterima                                                      |
+| change_amount                | decimal(15,2) | DEFAULT: 0                                                             | Kembalian                                                               |
+| payment_status               | enum          | VALUES: 'unpaid', 'partial', 'paid', 'refunded', DEFAULT: 'paid'       | Status pembayaran                                                       |
+| total_cost                   | decimal(15,2) | DEFAULT: 0                                                             | Total biaya/modal (HPP)                                                 |
+| total_profit                 | decimal(15,2) | DEFAULT: 0                                                             | Total laba kotor                                                        |
+| status                       | enum          | VALUES: 'draft', 'completed', 'void', DEFAULT: 'completed'             | Status transaksi                                                        |
+| note                         | text          | NULLABLE                                                               | Catatan                                                                 |
+| created_at                   | timestamp     |                                                                        |                                                                         |
+| updated_at                   | timestamp     |                                                                        |                                                                         |
+
+**Catatan Metode Pembayaran:**
+- `payment_id` pada `transactions` merekam metode pembayaran utama (*single-payment*).
+- Untuk transaksi yang menggunakan metode bayar gabungan (*split-payment*, misal Sebagian Tunai + Sebagian QRIS), rincian masing-masing pembayaran dicatat pada tabel `transaction_payment_attempts`.
 
 ---
 
@@ -1005,41 +1010,43 @@ Tabel transaksi (penjualan).
 
 Tabel item/detail transaksi.
 
-| Field                | Type            | Attributes                            | Keterangan                        |
-| -------------------- | --------------- | ------------------------------------- | --------------------------------- |
-| id                   | uuid            | PRIMARY KEY                           |                                   |
-| transaction_id       | uuid            | FK (transactions, CASCADE), INDEX     | Transaksi                         |
-| product_variant_id   | uuid            | FK (product_variants)                 | Varian Produk                     |
-| store_id             | uuid            | FK (stores)                           | Toko (redundan untuk laporan)     |
-| product_stock_id     | uuid            | NULLABLE, FK (product_stocks)         | Stok produk (pemberi referensi)   |
-| quantity             | unsignedInteger |                                       | Jumlah                            |
-| unit_price           | decimal(12,2)   |                                       | Harga per unit                    |
-| item_discount_mode   | enum            | VALUES: 'percent', 'amount', NULLABLE | Mode diskon item                  |
-| item_discount_value  | decimal(12,2)   | NULLABLE                              | Nilai diskon item                 |
-| item_discount_amount | decimal(15,2)   | DEFAULT: 0                            | Nominal diskon item               |
-| final_unit_price     | decimal(12,2)   |                                       | Harga per unit setelah diskon     |
-| line_subtotal        | decimal(15,2)   |                                       | Subtotal line (qty × unit_price)  |
-| line_total           | decimal(15,2)   |                                       | Total line setelah diskon         |
-| discount_type_id     | bigint          | NULLABLE, FK (discount_types)         | Tipe diskon yang dipakai          |
-| unit_cost            | decimal(12,2)   | DEFAULT: 0                            | Harga modal per unit              |
-| line_cost_total      | decimal(15,2)   | DEFAULT: 0                            | Total modal line                  |
-| line_profit          | decimal(15,2)   | DEFAULT: 0                            | Laba line                         |
-| price_edited         | boolean         | DEFAULT: false                        | Harga diubah manual               |
-| pricing_mode         | string          | NULLABLE                              | Mode pricing ('fixed'/'editable') |
-| created_at           | timestamp       |                                       |                                   |
-| updated_at           | timestamp       |                                       |                                   |
+| Field                | Type            | Attributes                            | Keterangan                                       |
+| -------------------- | --------------- | ------------------------------------- | ------------------------------------------------ |
+| id                   | uuid            | PRIMARY KEY                           |                                                  |
+| transaction_id       | uuid            | FK (transactions, CASCADE), INDEX     | Transaksi                                        |
+| item_type            | enum            | VALUES: 'part', 'labor', DEFAULT: 'part' | Tipe item (Suku cadang atau Jasa)             |
+| product_variant_id   | uuid            | NULLABLE, FK (product_variants)       | Varian Produk (NULL jika Jasa Custom)            |
+| description          | string          | NULLABLE                              | Deskripsi/nama barang atau jasa custom           |
+| store_id             | uuid            | FK (stores)                           | Toko (redundan untuk laporan)                    |
+| product_stock_id     | uuid            | NULLABLE, FK (product_stocks)         | Stok produk (pemberi referensi)                  |
+| quantity             | unsignedInteger |                                       | Jumlah                                           |
+| unit_price           | decimal(12,2)   |                                       | Harga per unit                                   |
+| item_discount_mode   | enum            | VALUES: 'percent', 'amount', NULLABLE | Mode diskon item                                 |
+| item_discount_value  | decimal(12,2)   | NULLABLE                              | Nilai diskon item                                |
+| item_discount_amount | decimal(15,2)   | DEFAULT: 0                            | Nominal diskon item                              |
+| final_unit_price     | decimal(12,2)   |                                       | Harga per unit setelah diskon                    |
+| line_subtotal        | decimal(15,2)   |                                       | Subtotal line (qty × unit_price)                 |
+| line_total           | decimal(15,2)   |                                       | Total line setelah diskon                        |
+| discount_type_id     | bigint          | NULLABLE, FK (discount_types)         | Tipe diskon yang dipakai                         |
+| unit_cost            | decimal(12,2)   | DEFAULT: 0                            | Harga modal per unit                             |
+| line_cost_total      | decimal(15,2)   | DEFAULT: 0                            | Total modal line                                 |
+| line_profit          | decimal(15,2)   | DEFAULT: 0                            | Laba line                                        |
+| price_edited         | boolean         | DEFAULT: false                        | Harga diubah manual                              |
+| pricing_mode         | string          | NULLABLE                              | Mode pricing ('fixed'/'editable')                |
+| created_at           | timestamp       |                                       |                                                  |
+| updated_at           | timestamp       |                                       |                                                  |
 
 ---
 
 ### 📋 transaction_payment_attempts
 
-Tabel percobaan pembayaran transaksi.
+Tabel percobaan pembayaran transaksi (mendukung split-payment).
 
 | Field          | Type          | Attributes                 | Keterangan          |
 | -------------- | ------------- | -------------------------- | ------------------- |
 | id             | uuid          | PRIMARY KEY                |                     |
 | transaction_id | uuid          | FK (transactions, CASCADE) | Transaksi           |
-| user_id        | bigint        | NULLABLE, FK (users)       | Pengguna            |
+| user_id        | uuid          | NULLABLE, FK (users)       | Kasir/Pengguna      |
 | payment_id     | uuid          | NULLABLE, FK (payments)    | Metode pembayaran   |
 | amount         | decimal(15,2) | DEFAULT: 0                 | Nominal pembayaran  |
 | amount_given   | decimal(15,2) | NULLABLE                   | Uang yang diberikan |
@@ -1053,7 +1060,7 @@ Tabel percobaan pembayaran transaksi.
 
 ### 📋 transaction_item_batches
 
-Tabel pivot untuk mencatat pemotongan HPP secara FIFO dari batch mana saja saat transaksi.
+Tabel pivot untuk mencatat pemotongan HPP secara FIFO dari batch mana saja saat transaksi (hanya untuk item bertipe `'part'`).
 
 | Field               | Type          | Attributes                      | Keterangan                      |
 | ------------------- | ------------- | ------------------------------- | ------------------------------- |

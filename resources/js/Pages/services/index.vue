@@ -2,8 +2,9 @@
 import DeleteConfirmationModal from '../../Components/DeleteConfirmationModal.vue';
 import PaginationLinks from '../../Components/PaginationLinks.vue';
 import DashboardLayout from '../../Layouts/DashboardLayout.vue';
+import { CalendarDate } from '@internationalized/date';
 import { router } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
 
 defineOptions({
     layout: [DashboardLayout, { title: 'Servis / Work Order', panelId: 'services' }],
@@ -16,11 +17,37 @@ const props = defineProps({
     options: Object,
 });
 
+const parseDateString = (str) => {
+    if (!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return (y && m && d) ? new CalendarDate(y, m, d) : null;
+};
+
+const formatDateString = (calDate) => {
+    if (!calDate) return '';
+    const y = calDate.year;
+    const m = String(calDate.month).padStart(2, '0');
+    const d = String(calDate.day).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
 const search = ref(props.filters?.search || '');
 const statusFilter = ref(props.filters?.status || '');
 const storeFilter = ref(props.filters?.store_id || '');
 const startDate = ref(props.filters?.start_date || '');
 const endDate = ref(props.filters?.end_date || '');
+
+const inputDateRef = useTemplateRef('inputDateRef');
+
+const dateRangeModel = shallowRef({
+    start: parseDateString(props.filters?.start_date),
+    end: parseDateString(props.filters?.end_date),
+});
+
+watch(dateRangeModel, (val) => {
+    startDate.value = val?.start ? formatDateString(val.start) : '';
+    endDate.value = val?.end ? formatDateString(val.end) : '';
+}, { deep: true });
 
 const deleteModalOpen = ref(false);
 const itemToDelete = ref(null);
@@ -51,6 +78,7 @@ const formatCurrency = (val) => {
 };
 
 const clearDateFilter = () => {
+    dateRangeModel.value = { start: null, end: null };
     startDate.value = '';
     endDate.value = '';
 };
@@ -249,13 +277,34 @@ const columns = [
                     />
 
                     <!-- Date Filter -->
-                    <div class="flex items-center gap-1.5 border border-default bg-default rounded-md px-2 py-1 text-xs">
-                        <UIcon name="i-lucide-calendar" class="size-4 text-muted shrink-0" />
-                        <input v-model="startDate" type="date" title="Dari Tanggal" class="bg-transparent outline-none text-xs" />
-                        <span class="text-muted font-medium">-</span>
-                        <input v-model="endDate" type="date" title="Sampai Tanggal" class="bg-transparent outline-none text-xs" />
-                        <button v-if="startDate || endDate" type="button" class="ml-1 text-muted hover:text-highlighted" title="Reset Tanggal" @click="clearDateFilter">
-                            <UIcon name="i-lucide-x" class="size-3.5" />
+                    <div class="flex items-center gap-1.5">
+                        <UInputDate ref="inputDateRef" v-model="dateRangeModel" range class="sm:w-60">
+                            <template #trailing>
+                                <UPopover :reference="inputDateRef?.inputsRef?.[0]?.$el">
+                                    <UButton
+                                        color="neutral"
+                                        variant="link"
+                                        size="sm"
+                                        icon="i-lucide-calendar"
+                                        aria-label="Pilih rentang tanggal"
+                                        class="px-0"
+                                    />
+
+                                    <template #content>
+                                        <UCalendar v-model="dateRangeModel" class="p-2" range />
+                                    </template>
+                                </UPopover>
+                            </template>
+                        </UInputDate>
+
+                        <button
+                            v-if="startDate || endDate"
+                            type="button"
+                            class="inline-flex size-8 items-center justify-center rounded-md border border-default bg-default text-muted hover:bg-elevated hover:text-highlighted"
+                            title="Reset Tanggal"
+                            @click="clearDateFilter"
+                        >
+                            <UIcon name="i-lucide-x" class="size-4" />
                         </button>
                     </div>
                 </div>
