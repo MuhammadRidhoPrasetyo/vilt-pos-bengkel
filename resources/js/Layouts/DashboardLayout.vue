@@ -205,6 +205,12 @@ const links = computed(() => [
             onSelect: () => navigateTo('/home'),
         },
         {
+            label: 'Pengguna',
+            icon: 'i-lucide-users',
+            active: currentPath.value.startsWith('/users'),
+            onSelect: () => navigateTo('/users'),
+        },
+        {
             label: 'Data Master',
             icon: 'i-lucide-database',
             active: currentPath.value.startsWith('/stores')
@@ -295,6 +301,12 @@ const links = computed(() => [
             ],
         },
         {
+            label: 'Transaksi / POS',
+            icon: 'i-lucide-shopping-cart',
+            active: currentPath.value.startsWith('/transactions'),
+            onSelect: () => navigateTo('/transactions'),
+        },
+        {
             label: 'Servis / SPK',
             icon: 'i-lucide-wrench',
             active: currentPath.value.startsWith('/services'),
@@ -322,33 +334,27 @@ const links = computed(() => [
         {
             label: 'Pengaturan',
             icon: 'i-lucide-settings',
-            active: currentPath.value.startsWith('/printers'),
-            defaultOpen: currentPath.value.startsWith('/printers'),
+            active: currentPath.value.startsWith('/printers')
+                || currentPath.value.startsWith('/roles')
+                || currentPath.value.startsWith('/permissions'),
+            defaultOpen: currentPath.value.startsWith('/printers')
+                || currentPath.value.startsWith('/roles')
+                || currentPath.value.startsWith('/permissions'),
             type: 'trigger',
             children: [
                 {
                     label: 'Printer Toko',
                     onSelect: () => navigateTo('/printers'),
                 },
+                {
+                    label: 'Peran / Role',
+                    onSelect: () => navigateTo('/roles'),
+                },
+                {
+                    label: 'Hak Akses / Permission',
+                    onSelect: () => navigateTo('/permissions'),
+                },
             ],
-        },
-        {
-            label: 'Pengguna',
-            icon: 'i-lucide-users',
-            active: currentPath.value.startsWith('/users'),
-            onSelect: () => navigateTo('/users'),
-        },
-        {
-            label: 'Peran',
-            icon: 'i-lucide-shield',
-            active: currentPath.value.startsWith('/roles'),
-            onSelect: () => navigateTo('/roles'),
-        },
-        {
-            label: 'Hak Akses',
-            icon: 'i-lucide-key-round',
-            active: currentPath.value.startsWith('/permissions'),
-            onSelect: () => navigateTo('/permissions'),
         },
     ],
 ]);

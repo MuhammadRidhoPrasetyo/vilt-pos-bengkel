@@ -19,6 +19,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
@@ -56,6 +57,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('services/display', [ServiceOrderController::class, 'tvDisplay'])->name('services.display');
     Route::patch('services/{service}/status', [ServiceOrderController::class, 'updateStatus'])->name('services.status.update');
     Route::resource('services', ServiceOrderController::class);
+    Route::get('transactions/{transaction}/print', [TransactionController::class, 'print'])->name('transactions.print');
+    Route::resource('transactions', TransactionController::class);
     Route::get('printers/{printer}/test', [PrinterController::class, 'test'])->name('printers.test');
     Route::resource('printers', PrinterController::class);
     Route::resource('warehouses', WarehouseController::class);

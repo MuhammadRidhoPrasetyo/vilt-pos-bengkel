@@ -159,9 +159,29 @@ const filteredVariants = computed(() => {
     });
 });
 
+const getItemStock = (variant) => {
+    if (!variant.stocks || !variant.stocks.length) return 0;
+    const currentStoreStock = variant.stocks.find(s => String(s.store_id) === String(form.store_id));
+    return currentStoreStock ? (currentStoreStock.quantity || 0) : 0;
+};
+
+const isVariantLabor = (variant) => {
+    const itemType = variant.product?.item_type || variant.item_type || 'part';
+    return itemType === 'labor';
+};
+
+const isVariantOutOfStock = (variant) => {
+    if (isVariantLabor(variant)) return false;
+    return getItemStock(variant) <= 0;
+};
+
 const isVariantSelected = (id) => selectedVariantIds.value.includes(id);
 
 const toggleSelectVariant = (id) => {
+    const variant = variantsList.value.find(v => v.id === id);
+    if (variant && isVariantOutOfStock(variant)) {
+        return;
+    }
     const idx = selectedVariantIds.value.indexOf(id);
     if (idx > -1) {
         selectedVariantIds.value.splice(idx, 1);
@@ -171,12 +191,15 @@ const toggleSelectVariant = (id) => {
 };
 
 const allFilteredSelected = computed(() => {
-    return filteredVariants.value.length > 0
-        && filteredVariants.value.every((v) => isVariantSelected(v.id));
+    const selectable = filteredVariants.value.filter(v => !isVariantOutOfStock(v));
+    return selectable.length > 0
+        && selectable.every((v) => isVariantSelected(v.id));
 });
 
 const toggleSelectAllFiltered = () => {
-    const filteredIds = filteredVariants.value.map((v) => v.id);
+    const filteredIds = filteredVariants.value
+        .filter(v => !isVariantOutOfStock(v))
+        .map((v) => v.id);
 
     if (allFilteredSelected.value) {
         selectedVariantIds.value = selectedVariantIds.value.filter((id) => !filteredIds.includes(id));
@@ -629,14 +652,20 @@ const submit = () => {
                         <div
                             v-for="variant in filteredVariants"
                             :key="variant.id"
-                            class="relative flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all select-none"
-                            :class="isVariantSelected(variant.id) ? 'border-primary bg-primary/5 shadow-xs' : 'border-default bg-default hover:border-default/80 hover:bg-elevated/40'"
+                            class="relative flex items-start gap-3 rounded-lg border p-3 transition-all select-none"
+                            :class="[
+                                isVariantOutOfStock(variant)
+                                    ? 'opacity-50 grayscale bg-elevated/40 cursor-not-allowed border-dashed'
+                                    : isVariantSelected(variant.id)
+                                        ? 'border-primary bg-primary/5 shadow-xs cursor-pointer'
+                                        : 'border-default bg-default hover:border-default/80 hover:bg-elevated/40 cursor-pointer'
+                            ]"
                             @click="toggleSelectVariant(variant.id)"
                         >
                             <!-- Thumbnail Image -->
                             <div class="size-16 shrink-0 rounded-md border border-default bg-elevated/50 flex items-center justify-center overflow-hidden">
                                 <img v-if="getVariantImageUrl(variant)" :src="getVariantImageUrl(variant)" :alt="getVariantName(variant)" class="size-full object-cover" />
-                                <UIcon v-else :name="(variant.product?.item_type || variant.item_type) === 'labor' ? 'i-lucide-wrench' : 'i-lucide-package'" class="size-7 text-muted/60" />
+                                <UIcon v-else :name="isVariantLabor(variant) ? 'i-lucide-wrench' : 'i-lucide-package'" class="size-7 text-muted/60" />
                             </div>
 
                             <!-- Variant Details -->
@@ -661,10 +690,22 @@ const submit = () => {
                                         {{ variant.product?.unit_name || variant.unit_name || 'Pcs' }}
                                     </span>
                                     <span
-                                        class="rounded px-1.5 py-0.5 font-semibold font-mono uppercase"
-                                        :class="(variant.product?.item_type || variant.item_type) === 'labor' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'"
+                                        v-if="isVariantLabor(variant)"
+                                        class="rounded px-1.5 py-0.5 font-semibold font-mono uppercase bg-purple-500/10 text-purple-600 border border-purple-500/20"
                                     >
-                                        {{ (variant.product?.item_type || variant.item_type) === 'labor' ? 'JASA' : 'PART' }}
+                                        JASA
+                                    </span>
+                                    <span
+                                        v-else-if="getItemStock(variant) > 0"
+                                        class="rounded px-1.5 py-0.5 font-semibold font-mono uppercase bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                                    >
+                                        STOK: {{ getItemStock(variant) }}
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="rounded px-1.5 py-0.5 font-semibold font-mono uppercase bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                                    >
+                                        STOK HABIS
                                     </span>
                                 </div>
 
