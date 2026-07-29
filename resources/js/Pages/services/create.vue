@@ -36,6 +36,37 @@ const form = useForm({
     items: [],
 });
 
+const customersList = computed(() => props.options?.customers || []);
+
+const selectedCustomerObj = computed(() => {
+    if (!form.customer_id) return null;
+    return customersList.value.find(c => String(c.id) === String(form.customer_id)) || null;
+});
+
+const customerVehicles = computed(() => {
+    return selectedCustomerObj.value?.vehicles || [];
+});
+
+const onCustomerSelectChange = () => {
+    if (selectedCustomerObj.value) {
+        form.customer_name = selectedCustomerObj.value.name || '';
+        form.customer_phone = selectedCustomerObj.value.phone || '';
+    } else {
+        form.customer_id = null;
+    }
+};
+
+const selectCustomerVehicle = (vehicle) => {
+    if (vehicle) {
+        form.vehicle_id = vehicle.id;
+        form.plate_number = vehicle.plate_number || form.plate_number;
+        form.vehicle_brand = vehicle.brand || form.vehicle_brand;
+        form.vehicle_model = vehicle.model || form.vehicle_model;
+        if (vehicle.year) form.year = vehicle.year;
+        if (vehicle.color) form.color = vehicle.color;
+    }
+};
+
 // Product Catalog Multi-Select Modal State
 const productModalOpen = ref(false);
 const catalogSearch = ref('');
@@ -265,6 +296,43 @@ const submit = () => {
 
                 <!-- Fields Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Customer Selector -->
+                    <div class="sm:col-span-2 bg-primary/5 p-3 rounded-lg border border-primary/20 space-y-2">
+                        <label class="text-xs font-bold text-highlighted flex items-center justify-between">
+                            <span>Pilih Pelanggan Terdaftar (Master Data)</span>
+                            <span class="text-[11px] font-normal text-muted">Atau isi manual untuk Walk-In / Pelanggan Baru</span>
+                        </label>
+                        <select
+                            v-model="form.customer_id"
+                            class="w-full rounded-lg border border-default bg-default px-3 py-1.5 text-xs text-highlighted outline-none focus:border-primary font-semibold"
+                            @change="onCustomerSelectChange"
+                        >
+                            <option :value="null">-- Walk-In / Pelanggan Baru (Input Manual) --</option>
+                            <option v-for="cust in customersList" :key="cust.id" :value="cust.id">
+                                {{ cust.name }} {{ cust.phone ? `(${cust.phone})` : '' }}
+                            </option>
+                        </select>
+
+                        <!-- Registered Customer Vehicles -->
+                        <div v-if="customerVehicles.length > 0" class="pt-2 border-t border-primary/10">
+                            <label class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block mb-1.5">
+                                Kendaraan Terdaftar Pelanggan Ini (Klik untuk pilih):
+                            </label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button
+                                    v-for="veh in customerVehicles"
+                                    :key="veh.id"
+                                    type="button"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors"
+                                    @click="selectCustomerVehicle(veh)"
+                                >
+                                    <UIcon name="i-lucide-car" class="size-3.5" />
+                                    <span class="font-mono">{{ veh.plate_number }}</span> ({{ veh.brand }} {{ veh.model }})
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="grid gap-1">
                         <label class="text-xs font-medium text-highlighted">No. Polisi / Plat Motor <span class="text-red-500">*</span></label>
                         <input

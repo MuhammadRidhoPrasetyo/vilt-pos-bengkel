@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CustomerVehicle;
 use App\Models\ServiceOrder;
 use App\Models\ServiceOrderItem;
 use Carbon\Carbon;
@@ -22,13 +23,31 @@ class ServiceOrderService
                 $estimatedTotal += ($qty * $price);
             }
 
+            $vehicleId = $data['vehicle_id'] ?? null;
+            if (! empty($data['customer_id']) && ! empty($data['plate_number'])) {
+                $plateNumber = strtoupper(trim($data['plate_number']));
+                $customerVehicle = CustomerVehicle::firstOrCreate(
+                    [
+                        'customer_id' => $data['customer_id'],
+                        'plate_number' => $plateNumber,
+                    ],
+                    [
+                        'brand' => $data['vehicle_brand'] ?? null,
+                        'model' => $data['vehicle_model'] ?? null,
+                        'year' => $data['year'] ?? null,
+                        'color' => $data['color'] ?? null,
+                    ]
+                );
+                $vehicleId = $customerVehicle->id;
+            }
+
             $serviceOrder = ServiceOrder::create([
                 'number' => $number,
                 'store_id' => $data['store_id'],
                 'customer_id' => $data['customer_id'] ?? null,
                 'customer_name' => $data['customer_name'],
                 'customer_phone' => $data['customer_phone'] ?? null,
-                'vehicle_id' => $data['vehicle_id'] ?? null,
+                'vehicle_id' => $vehicleId,
                 'plate_number' => strtoupper(trim($data['plate_number'])),
                 'vehicle_brand' => $data['vehicle_brand'] ?? null,
                 'vehicle_model' => $data['vehicle_model'] ?? null,
@@ -84,12 +103,30 @@ class ServiceOrderService
                 $completedAt = null;
             }
 
+            $vehicleId = $data['vehicle_id'] ?? null;
+            if (! empty($data['customer_id']) && ! empty($data['plate_number'])) {
+                $plateNumber = strtoupper(trim($data['plate_number']));
+                $customerVehicle = CustomerVehicle::firstOrCreate(
+                    [
+                        'customer_id' => $data['customer_id'],
+                        'plate_number' => $plateNumber,
+                    ],
+                    [
+                        'brand' => $data['vehicle_brand'] ?? null,
+                        'model' => $data['vehicle_model'] ?? null,
+                        'year' => $data['year'] ?? null,
+                        'color' => $data['color'] ?? null,
+                    ]
+                );
+                $vehicleId = $customerVehicle->id;
+            }
+
             $serviceOrder->update([
                 'store_id' => $data['store_id'],
                 'customer_id' => $data['customer_id'] ?? null,
                 'customer_name' => $data['customer_name'],
                 'customer_phone' => $data['customer_phone'] ?? null,
-                'vehicle_id' => $data['vehicle_id'] ?? null,
+                'vehicle_id' => $vehicleId,
                 'plate_number' => strtoupper(trim($data['plate_number'])),
                 'vehicle_brand' => $data['vehicle_brand'] ?? null,
                 'vehicle_model' => $data['vehicle_model'] ?? null,

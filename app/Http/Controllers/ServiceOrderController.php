@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateServiceOrderRequest;
 use App\Http\Resources\ProductVariantResource;
 use App\Http\Resources\ServiceOrderResource;
 use App\Http\Resources\UserResource;
+use App\Models\Partner;
 use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\ServiceOrder;
@@ -103,6 +104,12 @@ class ServiceOrderController extends Controller
     {
         $mechanics = $this->getScopedMechanics($request);
 
+        $customers = Partner::query()
+            ->with('vehicles')
+            ->select(['id', 'name', 'phone', 'email'])
+            ->orderBy('name')
+            ->get();
+
         $categories = ProductCategory::query()
             ->select(['id', 'name'])
             ->orderBy('name')
@@ -118,6 +125,7 @@ class ServiceOrderController extends Controller
             'options' => [
                 'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
                 'mechanics' => UserResource::collection($mechanics),
+                'customers' => $customers,
                 'categories' => $categories,
             ],
             'variants' => ProductVariantResource::collection($variants),
@@ -129,6 +137,12 @@ class ServiceOrderController extends Controller
         $serviceOrder = $this->repository->findWithRelations($id);
 
         $mechanics = $this->getScopedMechanics($request, $serviceOrder->store_id);
+
+        $customers = Partner::query()
+            ->with('vehicles')
+            ->select(['id', 'name', 'phone', 'email'])
+            ->orderBy('name')
+            ->get();
 
         $categories = ProductCategory::query()
             ->select(['id', 'name'])
@@ -146,6 +160,7 @@ class ServiceOrderController extends Controller
             'options' => [
                 'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
                 'mechanics' => UserResource::collection($mechanics),
+                'customers' => $customers,
                 'categories' => $categories,
             ],
             'variants' => ProductVariantResource::collection($variants),

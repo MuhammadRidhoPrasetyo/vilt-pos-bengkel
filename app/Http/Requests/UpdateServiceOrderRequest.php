@@ -22,7 +22,7 @@ class UpdateServiceOrderRequest extends FormRequest
             'customer_id' => ['nullable', Rule::exists('partners', 'id')],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:50'],
-            'vehicle_id' => ['nullable', Rule::exists('vehicles', 'id')],
+            'vehicle_id' => ['nullable', Rule::exists('customer_vehicles', 'id')],
             'plate_number' => ['required', 'string', 'max:50'],
             'vehicle_brand' => ['nullable', 'string', 'max:100'],
             'vehicle_model' => ['nullable', 'string', 'max:100'],

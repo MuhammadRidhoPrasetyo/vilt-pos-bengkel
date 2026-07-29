@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Partner extends BaseModel
 {
@@ -20,5 +21,10 @@ class Partner extends BaseModel
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(PartnerRole::class, 'partner_role_partner');
+    }
+
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(CustomerVehicle::class, 'customer_id');
     }
 }
