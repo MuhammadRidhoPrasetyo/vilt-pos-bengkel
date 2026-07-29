@@ -336,15 +336,21 @@ const links = computed(() => [
             icon: 'i-lucide-settings',
             active: currentPath.value.startsWith('/printers')
                 || currentPath.value.startsWith('/roles')
-                || currentPath.value.startsWith('/permissions'),
+                || currentPath.value.startsWith('/permissions')
+                || currentPath.value.startsWith('/settings/database'),
             defaultOpen: currentPath.value.startsWith('/printers')
                 || currentPath.value.startsWith('/roles')
-                || currentPath.value.startsWith('/permissions'),
+                || currentPath.value.startsWith('/permissions')
+                || currentPath.value.startsWith('/settings/database'),
             type: 'trigger',
             children: [
                 {
                     label: 'Printer Toko',
                     onSelect: () => navigateTo('/printers'),
+                },
+                {
+                    label: 'Export / Import Database',
+                    onSelect: () => navigateTo('/settings/database'),
                 },
                 {
                     label: 'Peran / Role',

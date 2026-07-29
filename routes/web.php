@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CashFlowCategoryController;
+use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\DiscountTypeController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PartnerRoleController;
@@ -66,4 +67,9 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('roles', RoleController::class);
     Route::resource('permissions', PermissionController::class);
     Route::resource('users', UserController::class);
+
+    // Database Backup & Restore Routes
+    Route::get('settings/database', [DatabaseBackupController::class, 'index'])->name('settings.database.index');
+    Route::get('settings/database/export', [DatabaseBackupController::class, 'export'])->name('settings.database.export');
+    Route::post('settings/database/import', [DatabaseBackupController::class, 'import'])->name('settings.database.import');
 });
