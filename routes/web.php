@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CashFlowCategoryController;
+use App\Http\Controllers\CashFlowController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\DiscountTypeController;
 use App\Http\Controllers\PartnerController;
@@ -38,9 +40,7 @@ Route::get('/home', function () {
     return Inertia::render('Portal');
 })->middleware(['auth'])->name('home');
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)->middleware(['auth'])->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
     Route::resource('stores', StoreController::class);
@@ -51,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('units', UnitController::class);
     Route::resource('payments', PaymentController::class);
     Route::resource('cash-flow-categories', CashFlowCategoryController::class);
+    Route::resource('cash-flows', CashFlowController::class);
     Route::resource('product-categories', ProductCategoryController::class);
     Route::resource('products', ProductController::class);
     Route::post('products/{product}/attributes', [ProductAttributeController::class, 'store'])->name('products.attributes.store');

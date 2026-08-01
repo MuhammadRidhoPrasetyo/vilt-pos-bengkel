@@ -189,7 +189,7 @@ const userItems = computed(() => [
     ],
 ]);
 
-const currentPath = computed(() => page.url?.split('?')[0] || '/home');
+const currentPath = computed(() => page.url?.split('?')[0] || '/dashboard');
 
 const navigateTo = (path) => {
     open.value = false;
@@ -201,107 +201,11 @@ const links = computed(() => [
         {
             label: 'Beranda',
             icon: 'i-lucide-house',
-            active: currentPath.value === '/home',
-            onSelect: () => navigateTo('/home'),
+            active: currentPath.value === '/dashboard',
+            onSelect: () => navigateTo('/dashboard'),
         },
         {
-            label: 'Pengguna',
-            icon: 'i-lucide-users',
-            active: currentPath.value.startsWith('/users'),
-            onSelect: () => navigateTo('/users'),
-        },
-        {
-            label: 'Data Master',
-            icon: 'i-lucide-database',
-            active: currentPath.value.startsWith('/stores')
-                || currentPath.value.startsWith('/partners')
-                || currentPath.value.startsWith('/partner-roles')
-                || currentPath.value.startsWith('/discount-types')
-                || currentPath.value.startsWith('/brands')
-                || currentPath.value.startsWith('/units')
-                || currentPath.value.startsWith('/attributes')
-                || currentPath.value.startsWith('/payments')
-                || currentPath.value.startsWith('/cash-flow-categories'),
-            defaultOpen: currentPath.value.startsWith('/stores')
-                || currentPath.value.startsWith('/partners')
-                || currentPath.value.startsWith('/partner-roles')
-                || currentPath.value.startsWith('/discount-types')
-                || currentPath.value.startsWith('/brands')
-                || currentPath.value.startsWith('/units')
-                || currentPath.value.startsWith('/attributes')
-                || currentPath.value.startsWith('/payments')
-                || currentPath.value.startsWith('/cash-flow-categories'),
-            type: 'trigger',
-            children: [
-                {
-                    label: 'Toko',
-                    onSelect: () => navigateTo('/stores'),
-                },
-                {
-                    label: 'Mitra',
-                    onSelect: () => navigateTo('/partners'),
-                },
-                {
-                    label: 'Role Partner',
-                    onSelect: () => navigateTo('/partner-roles'),
-                },
-                {
-                    label: 'Jenis Diskon',
-                    onSelect: () => navigateTo('/discount-types'),
-                },
-                {
-                    label: 'Merek',
-                    onSelect: () => navigateTo('/brands'),
-                },
-                {
-                    label: 'Satuan',
-                    onSelect: () => navigateTo('/units'),
-                },
-                {
-                    label: 'Pembayaran',
-                    onSelect: () => navigateTo('/payments'),
-                },
-                {
-                    label: 'Kategori Arus Kas',
-                    onSelect: () => navigateTo('/cash-flow-categories'),
-                },
-            ],
-        },
-        {
-            label: 'Produk',
-            icon: 'i-lucide-package',
-            active: currentPath.value.startsWith('/product-categories')
-                || currentPath.value.startsWith('/products')
-                || currentPath.value.startsWith('/product-variants')
-                || currentPath.value.startsWith('/product-stocks')
-                || currentPath.value.startsWith('/purchases'),
-            defaultOpen: currentPath.value.startsWith('/product-categories')
-                || currentPath.value.startsWith('/products')
-                || currentPath.value.startsWith('/product-variants')
-                || currentPath.value.startsWith('/product-stocks')
-                || currentPath.value.startsWith('/purchases'),
-            type: 'trigger',
-            children: [
-                {
-                    label: 'Kategori Produk',
-                    onSelect: () => navigateTo('/product-categories'),
-                },
-                {
-                    label: 'Produk',
-                    onSelect: () => navigateTo('/products'),
-                },
-                {
-                    label: 'Stok Produk',
-                    onSelect: () => navigateTo('/product-stocks'),
-                },
-                {
-                    label: 'Pembelian / Restok',
-                    onSelect: () => navigateTo('/purchases'),
-                },
-            ],
-        },
-        {
-            label: 'Transaksi / POS',
+            label: 'POS Penjualan',
             icon: 'i-lucide-shopping-cart',
             active: currentPath.value.startsWith('/transactions'),
             onSelect: () => navigateTo('/transactions'),
@@ -313,7 +217,38 @@ const links = computed(() => [
             onSelect: () => navigateTo('/services'),
         },
         {
-            label: 'Gudang',
+            label: 'Katalog & Stok',
+            icon: 'i-lucide-package',
+            active: currentPath.value.startsWith('/products')
+                || currentPath.value.startsWith('/product-categories')
+                || currentPath.value.startsWith('/product-stocks')
+                || currentPath.value.startsWith('/purchases'),
+            defaultOpen: currentPath.value.startsWith('/products')
+                || currentPath.value.startsWith('/product-categories')
+                || currentPath.value.startsWith('/product-stocks')
+                || currentPath.value.startsWith('/purchases'),
+            type: 'trigger',
+            children: [
+                {
+                    label: 'Semua Produk',
+                    onSelect: () => navigateTo('/products'),
+                },
+                {
+                    label: 'Kategori Produk',
+                    onSelect: () => navigateTo('/product-categories'),
+                },
+                {
+                    label: 'Stok Barang',
+                    onSelect: () => navigateTo('/product-stocks'),
+                },
+                {
+                    label: 'Pembelian / Restok',
+                    onSelect: () => navigateTo('/purchases'),
+                },
+            ],
+        },
+        {
+            label: 'Gudang & Logistik',
             icon: 'i-lucide-warehouse',
             active: currentPath.value.startsWith('/warehouses')
                 || currentPath.value.startsWith('/warehouse-locations')
@@ -326,11 +261,11 @@ const links = computed(() => [
             type: 'trigger',
             children: [
                 {
-                    label: 'Warehouse',
+                    label: 'Daftar Warehouse',
                     onSelect: () => navigateTo('/warehouses'),
                 },
                 {
-                    label: 'Lokasi Warehouse',
+                    label: 'Lokasi / Rak Warehouse',
                     onSelect: () => navigateTo('/warehouse-locations'),
                 },
                 {
@@ -344,25 +279,91 @@ const links = computed(() => [
             ],
         },
         {
-            label: 'Pengaturan',
+            label: 'Keuangan & Kas',
+            icon: 'i-lucide-wallet',
+            active: currentPath.value.startsWith('/cash-flows')
+                || currentPath.value.startsWith('/cash-flow-categories')
+                || currentPath.value.startsWith('/payments'),
+            defaultOpen: currentPath.value.startsWith('/cash-flows')
+                || currentPath.value.startsWith('/cash-flow-categories')
+                || currentPath.value.startsWith('/payments'),
+            type: 'trigger',
+            children: [
+                {
+                    label: 'Arus Kas (Cash Flow)',
+                    onSelect: () => navigateTo('/cash-flows'),
+                },
+                {
+                    label: 'Kategori Arus Kas',
+                    onSelect: () => navigateTo('/cash-flow-categories'),
+                },
+                {
+                    label: 'Metode Pembayaran',
+                    onSelect: () => navigateTo('/payments'),
+                },
+            ],
+        },
+        {
+            label: 'Mitra & Kontak',
+            icon: 'i-lucide-users',
+            active: currentPath.value.startsWith('/partners')
+                || currentPath.value.startsWith('/partner-roles'),
+            defaultOpen: currentPath.value.startsWith('/partners')
+                || currentPath.value.startsWith('/partner-roles'),
+            type: 'trigger',
+            children: [
+                {
+                    label: 'Mitra / Pelanggan / Supplier',
+                    onSelect: () => navigateTo('/partners'),
+                },
+                {
+                    label: 'Role Partner',
+                    onSelect: () => navigateTo('/partner-roles'),
+                },
+            ],
+        },
+        {
+            label: 'Pengaturan & System',
             icon: 'i-lucide-settings',
-            active: currentPath.value.startsWith('/printers')
+            active: currentPath.value.startsWith('/stores')
+                || currentPath.value.startsWith('/brands')
+                || currentPath.value.startsWith('/units')
+                || currentPath.value.startsWith('/discount-types')
+                || currentPath.value.startsWith('/users')
                 || currentPath.value.startsWith('/roles')
                 || currentPath.value.startsWith('/permissions')
+                || currentPath.value.startsWith('/printers')
                 || currentPath.value.startsWith('/settings/database'),
-            defaultOpen: currentPath.value.startsWith('/printers')
+            defaultOpen: currentPath.value.startsWith('/stores')
+                || currentPath.value.startsWith('/brands')
+                || currentPath.value.startsWith('/units')
+                || currentPath.value.startsWith('/discount-types')
+                || currentPath.value.startsWith('/users')
                 || currentPath.value.startsWith('/roles')
                 || currentPath.value.startsWith('/permissions')
+                || currentPath.value.startsWith('/printers')
                 || currentPath.value.startsWith('/settings/database'),
             type: 'trigger',
             children: [
                 {
-                    label: 'Printer Toko',
-                    onSelect: () => navigateTo('/printers'),
+                    label: 'Cabang Toko',
+                    onSelect: () => navigateTo('/stores'),
                 },
                 {
-                    label: 'Export / Import Database',
-                    onSelect: () => navigateTo('/settings/database'),
+                    label: 'Merek / Brand',
+                    onSelect: () => navigateTo('/brands'),
+                },
+                {
+                    label: 'Satuan Barang',
+                    onSelect: () => navigateTo('/units'),
+                },
+                {
+                    label: 'Jenis Diskon',
+                    onSelect: () => navigateTo('/discount-types'),
+                },
+                {
+                    label: 'Pengguna Sistem',
+                    onSelect: () => navigateTo('/users'),
                 },
                 {
                     label: 'Peran / Role',
@@ -371,6 +372,14 @@ const links = computed(() => [
                 {
                     label: 'Hak Akses / Permission',
                     onSelect: () => navigateTo('/permissions'),
+                },
+                {
+                    label: 'Printer Toko',
+                    onSelect: () => navigateTo('/printers'),
+                },
+                {
+                    label: 'Backup / Restore Database',
+                    onSelect: () => navigateTo('/settings/database'),
                 },
             ],
         },
@@ -542,6 +551,12 @@ const formatTimeAgo = (date) => {
 
                     <template #right>
                         <slot name="navbar-right">
+                            <UTooltip text="Portal Menu" :shortcuts="['P']">
+                                <UButton color="neutral" variant="ghost" square @click="navigateTo('/home')">
+                                    <UIcon name="i-lucide-layout-grid" class="size-5 shrink-0" />
+                                </UButton>
+                            </UTooltip>
+
                             <UTooltip text="Notifikasi" :shortcuts="['N']">
                                 <UButton color="neutral" variant="ghost" square @click="notificationsOpen = true">
                                     <UChip color="error" inset>

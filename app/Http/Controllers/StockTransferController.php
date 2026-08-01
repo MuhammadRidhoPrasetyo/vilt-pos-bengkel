@@ -135,10 +135,28 @@ class StockTransferController extends Controller
             'stores' => Store::query()->select(['id', 'name'])->orderBy('name')->get()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
             'warehouses' => Warehouse::query()->select(['id', 'store_id', 'name'])->orderBy('name')->get()->map(fn ($warehouse) => ['label' => $warehouse->name, 'value' => $warehouse->id, 'store_id' => $warehouse->store_id]),
             'warehouseLocations' => WarehouseLocation::query()->select(['id', 'warehouse_id', 'name', 'full_path'])->orderBy('full_path')->get()->map(fn ($location) => ['label' => $location->full_path ?? $location->name, 'value' => $location->id, 'warehouse_id' => $location->warehouse_id]),
-            'variants' => ProductVariant::with('product:id,name')->orderBy('sku')->get()->map(fn ($variant) => [
+            'variants' => ProductVariant::with([
+                'product:id,name,product_category_id,brand_id,unit_id',
+                'product.category:id,name',
+                'product.brand:id,name',
+                'product.unit:id,name,symbol',
+                'media',
+                'product.media',
+            ])->orderBy('sku')->get()->map(fn ($variant) => [
+                'id' => $variant->id,
                 'label' => $variant->display_receipt_name,
                 'value' => $variant->id,
+                'name' => $variant->display_receipt_name,
+                'product_name' => $variant->product?->name,
                 'sku' => $variant->sku,
+                'barcode' => $variant->barcode,
+                'category_id' => $variant->product?->product_category_id,
+                'category_name' => $variant->product?->category?->name ?? '-',
+                'brand_name' => $variant->product?->brand?->name ?? '-',
+                'unit_name' => $variant->product?->unit?->symbol ?? $variant->product?->unit?->name ?? 'Pcs',
+                'image_url' => $variant->getFirstMediaUrl('images', 'thumb')
+                    ?: $variant->product?->getFirstMediaUrl('images', 'thumb')
+                    ?: null,
                 'default_purchase_price' => (float) $variant->default_purchase_price,
             ]),
             'prices' => ProductPrice::query()->select(['id', 'product_variant_id', 'store_id', 'purchase_price', 'selling_price'])->get(),

@@ -1,165 +1,28 @@
 <script setup>
-import DashboardLayout from '../Layouts/DashboardLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { CalendarDate, DateFormatter, getLocalTimeZone, today } from '@internationalized/date';
+import DashboardLayout from '../../Layouts/DashboardLayout.vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 defineOptions({
-    layout: [DashboardLayout, { title: 'Beranda & Arus Kas', panelId: 'dashboard' }],
+    layout: [DashboardLayout, { title: 'Transaksi Arus Kas', panelId: 'cash-flows' }],
 });
 
 const props = defineProps({
-    summary: {
-        type: Object,
-        default: () => ({
-            total_income: 0,
-            total_expense: 0,
-            net_balance: 0,
-            total_transactions: 0,
-            total_revenue: 0,
-        }),
-    },
-    recentCashFlows: {
-        type: Object,
-        default: () => ({ data: [] }),
-    },
-    options: {
-        type: Object,
-        default: () => ({ stores: [], incomeCategories: [], expenseCategories: [] }),
-    },
+    records: { type: Object, required: true },
+    summary: { type: Object, default: () => ({ total_income: 0, total_expense: 0, net_balance: 0 }) },
+    filters: { type: Object, default: () => ({}) },
+    options: { type: Object, default: () => ({ stores: [], categories: [], incomeCategories: [], expenseCategories: [] }) },
 });
 
-const period = ref('daily');
+const search = ref(props.filters.search || '');
+const selectedType = ref(props.filters.type || '');
+const selectedCategory = ref(props.filters.category_id || '');
+const selectedStore = ref(props.filters.store_id || '');
+const startDate = ref(props.filters.start_date || '');
+const endDate = ref(props.filters.end_date || '');
 
-const df = new DateFormatter('id-ID', {
-    dateStyle: 'medium',
-});
-
-const selectedRange = ref({
-    start: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    end: new Date(),
-});
-
-const ranges = [
-    { label: '7 Hari Terakhir', days: 7 },
-    { label: '14 Hari Terakhir', days: 14 },
-    { label: '30 Hari Terakhir', days: 30 },
-    { label: '3 Bulan Terakhir', months: 3 },
-    { label: '6 Bulan Terakhir', months: 6 },
-    { label: '1 Tahun Terakhir', years: 1 },
-];
-
-const toCalendarDate = (date) => new CalendarDate(
-    date.getFullYear(),
-    date.getMonth() + 1,
-    date.getDate(),
-);
-
-const calendarRange = computed({
-    get: () => ({
-        start: selectedRange.value.start ? toCalendarDate(selectedRange.value.start) : undefined,
-        end: selectedRange.value.end ? toCalendarDate(selectedRange.value.end) : undefined,
-    }),
-    set: (newValue) => {
-        selectedRange.value = {
-            start: newValue.start ? newValue.start.toDate(getLocalTimeZone()) : new Date(),
-            end: newValue.end ? newValue.end.toDate(getLocalTimeZone()) : new Date(),
-        };
-    },
-});
-
-const rangeLabel = computed(() => {
-    if (!selectedRange.value.start) {
-        return 'Pilih tanggal';
-    }
-
-    if (!selectedRange.value.end) {
-        return df.format(selectedRange.value.start);
-    }
-
-    return `${df.format(selectedRange.value.start)} - ${df.format(selectedRange.value.end)}`;
-});
-
-const isRangeSelected = (range) => {
-    if (!selectedRange.value.start || !selectedRange.value.end) {
-        return false;
-    }
-
-    const currentDate = today(getLocalTimeZone());
-    let startDate = currentDate.copy();
-
-    if (range.days) {
-        startDate = startDate.subtract({ days: range.days });
-    } else if (range.months) {
-        startDate = startDate.subtract({ months: range.months });
-    } else if (range.years) {
-        startDate = startDate.subtract({ years: range.years });
-    }
-
-    return toCalendarDate(selectedRange.value.start).compare(startDate) === 0
-        && toCalendarDate(selectedRange.value.end).compare(currentDate) === 0;
-};
-
-const selectRange = (range) => {
-    const endDate = today(getLocalTimeZone());
-    let startDate = endDate.copy();
-
-    if (range.days) {
-        startDate = startDate.subtract({ days: range.days });
-    } else if (range.months) {
-        startDate = startDate.subtract({ months: range.months });
-    } else if (range.years) {
-        startDate = startDate.subtract({ years: range.years });
-    }
-
-    selectedRange.value = {
-        start: startDate.toDate(getLocalTimeZone()),
-        end: endDate.toDate(getLocalTimeZone()),
-    };
-};
-
-const daysInRange = computed(() => {
-    const start = selectedRange.value.start;
-    const end = selectedRange.value.end;
-
-    return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
-});
-
-const periods = computed(() => {
-    if (daysInRange.value <= 8) {
-        return ['daily'];
-    }
-
-    if (daysInRange.value <= 31) {
-        return ['daily', 'weekly'];
-    }
-
-    return ['weekly', 'monthly'];
-});
-
-watch(periods, () => {
-    if (!periods.value.includes(period.value)) {
-        [period.value] = periods.value;
-    }
-});
-
-const formatCurrency = (val) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0,
-    }).format(val || 0);
-};
-
-const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
-};
-
-// Modal Input Transaksi Kas Cepat dari Dashboard
 const modalOpen = ref(false);
-const modalType = ref('income'); // 'income' | 'expense'
+const modalType = ref('income'); // 'income' or 'expense'
 
 const modalForm = useForm({
     store_id: props.options?.stores?.[0]?.value || '',
@@ -196,9 +59,53 @@ const submitModal = () => {
     modalForm.post('/cash-flows', {
         onSuccess: () => {
             closeModal();
-            router.reload({ only: ['summary', 'recentCashFlows'] });
         },
     });
+};
+
+const applyFilters = () => {
+    router.get('/cash-flows', {
+        search: search.value || undefined,
+        type: selectedType.value || undefined,
+        category_id: selectedCategory.value || undefined,
+        store_id: selectedStore.value || undefined,
+        start_date: startDate.value || undefined,
+        end_date: endDate.value || undefined,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
+const resetFilters = () => {
+    search.value = '';
+    selectedType.value = '';
+    selectedCategory.value = '';
+    selectedStore.value = '';
+    startDate.value = '';
+    endDate.value = '';
+    applyFilters();
+};
+
+const deleteRecord = (id) => {
+    if (confirm('Apakah Anda yakin ingin menghapus catatan arus kas ini?')) {
+        router.delete(`/cash-flows/${id}`);
+    }
+};
+
+const formatCurrency = (val) => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0,
+    }).format(val || 0);
+};
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
 };
 
 watch(modalType, (newType) => {
@@ -209,111 +116,61 @@ watch(modalType, (newType) => {
 
 <template>
     <div class="space-y-6">
-        <!-- Toolbar & Filter -->
-        <UDashboardToolbar>
-            <template #left>
-                <UPopover :content="{ align: 'start' }" :modal="true">
-                    <UButton
-                        color="neutral"
-                        variant="ghost"
-                        icon="i-lucide-calendar"
-                        class="-ms-1 data-[state=open]:bg-elevated group"
-                    >
-                        <span class="truncate">{{ rangeLabel }}</span>
+        <!-- Page Header -->
+        <div class="flex flex-col gap-4 border-b border-default pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-highlighted">Transaksi Arus Kas (Cash Flow)</h1>
+                <p class="text-xs sm:text-sm text-muted">Kelola pencatatan pemasukan, pengeluaran kas operasional, dan ringkasan saldo keuangan toko.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-emerald-500 transition-colors shadow-sm"
+                    @click="openModal('income')"
+                >
+                    <UIcon name="i-lucide-arrow-down-left" class="size-4" />
+                    + Catat Pemasukan
+                </button>
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-rose-500 transition-colors shadow-sm"
+                    @click="openModal('expense')"
+                >
+                    <UIcon name="i-lucide-arrow-up-right" class="size-4" />
+                    - Catat Pengeluaran
+                </button>
+            </div>
+        </div>
 
-                        <template #trailing>
-                            <UIcon name="i-lucide-chevron-down" class="size-5 shrink-0 text-dimmed transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                        </template>
-                    </UButton>
-
-                    <template #content>
-                        <div class="flex items-stretch divide-default sm:divide-x">
-                            <div class="hidden flex-col justify-center sm:flex">
-                                <UButton
-                                    v-for="(range, index) in ranges"
-                                    :key="index"
-                                    :label="range.label"
-                                    color="neutral"
-                                    variant="ghost"
-                                    class="rounded-none px-4"
-                                    :class="[isRangeSelected(range) ? 'bg-elevated' : 'hover:bg-elevated/50']"
-                                    truncate
-                                    @click="selectRange(range)"
-                                />
-                            </div>
-
-                            <UCalendar
-                                v-model="calendarRange"
-                                class="p-2"
-                                :number-of-months="2"
-                                range
-                            />
-                        </div>
-                    </template>
-                </UPopover>
-
-                <USelect
-                    v-model="period"
-                    :items="periods"
-                    variant="ghost"
-                    class="data-[state=open]:bg-elevated"
-                    :ui="{ value: 'capitalize', itemLabel: 'capitalize', trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
-                />
-            </template>
-
-            <template #right>
-                <div class="flex items-center gap-2">
-                    <button
-                        type="button"
-                        class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition-colors shadow-xs"
-                        @click="openModal('income')"
-                    >
-                        <UIcon name="i-lucide-arrow-down-left" class="size-3.5" />
-                        + Pemasukan Kas
-                    </button>
-                    <button
-                        type="button"
-                        class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 transition-colors shadow-xs"
-                        @click="openModal('expense')"
-                    >
-                        <UIcon name="i-lucide-arrow-up-right" class="size-3.5" />
-                        - Pengeluaran Kas
-                    </button>
-                </div>
-            </template>
-        </UDashboardToolbar>
-
-        <!-- Dynamic Cash Flow Metric Cards -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <!-- Total Pemasukan -->
+        <!-- Summary Metric Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Pemasukan -->
             <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-center justify-between shadow-xs">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Total Pemasukan Kas</p>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Total Pemasukan</p>
                     <p class="mt-1 text-2xl font-extrabold font-mono text-emerald-300">
                         {{ formatCurrency(summary.total_income) }}
                     </p>
-                    <p class="mt-1 text-[11px] text-emerald-400/80">Termasuk POS & setoran manual</p>
                 </div>
-                <div class="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <div class="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
                     <UIcon name="i-lucide-trending-up" class="size-6" />
                 </div>
             </div>
 
-            <!-- Total Pengeluaran -->
+            <!-- Pengeluaran -->
             <div class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 flex items-center justify-between shadow-xs">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-rose-400">Total Pengeluaran Kas</p>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-rose-400">Total Pengeluaran</p>
                     <p class="mt-1 text-2xl font-extrabold font-mono text-rose-300">
                         {{ formatCurrency(summary.total_expense) }}
                     </p>
-                    <p class="mt-1 text-[11px] text-rose-400/80">Termasuk restok & biaya operasional</p>
                 </div>
-                <div class="h-12 w-12 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                <div class="h-12 w-12 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400">
                     <UIcon name="i-lucide-trending-down" class="size-6" />
                 </div>
             </div>
 
-            <!-- Saldo Kas Bersih -->
+            <!-- Saldo Bersih -->
             <div :class="[
                 'rounded-xl border p-4 flex items-center justify-between shadow-xs',
                 summary.net_balance >= 0 ? 'border-indigo-500/20 bg-indigo-500/5' : 'border-amber-500/20 bg-amber-500/5'
@@ -323,47 +180,75 @@ watch(modalType, (newType) => {
                     <p :class="['mt-1 text-2xl font-extrabold font-mono', summary.net_balance >= 0 ? 'text-indigo-300' : 'text-amber-400']">
                         {{ formatCurrency(summary.net_balance) }}
                     </p>
-                    <p class="mt-1 text-[11px] text-muted">Saldo kumulatif kas toko</p>
                 </div>
-                <div class="h-12 w-12 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                <div class="h-12 w-12 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                     <UIcon name="i-lucide-wallet" class="size-6" />
-                </div>
-            </div>
-
-            <!-- Total Penjualan POS -->
-            <div class="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex items-center justify-between shadow-xs">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-blue-400">Total Transaksi POS</p>
-                    <p class="mt-1 text-2xl font-extrabold font-mono text-blue-300">
-                        {{ summary.total_transactions }} <span class="text-xs font-normal text-muted">Transaksi</span>
-                    </p>
-                    <p class="mt-1 text-[11px] text-blue-400/80">Omset: {{ formatCurrency(summary.total_revenue) }}</p>
-                </div>
-                <div class="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
-                    <UIcon name="i-lucide-shopping-cart" class="size-6" />
                 </div>
             </div>
         </div>
 
-        <!-- Cash Flows Index Section -->
-        <div class="space-y-4 rounded-xl border border-default bg-default p-5 shadow-xs">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-default pb-4">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <UIcon name="i-lucide-receipt" class="size-5 text-primary" />
-                        <h2 class="text-lg font-bold text-highlighted">Index Transaksi Arus Kas (Cash Flows Index)</h2>
+        <!-- Filter & Search Bar -->
+        <div class="rounded-xl border border-default bg-default p-4 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                <!-- Search -->
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-medium text-muted mb-1">Pencarian Deskripsi</label>
+                    <div class="relative">
+                        <UIcon name="i-lucide-search" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                        <input
+                            v-model="search"
+                            type="search"
+                            class="w-full rounded-md border border-default bg-default py-1.5 pl-9 pr-3 text-xs outline-none focus:border-primary"
+                            placeholder="Cari deskripsi / referensi..."
+                            @keyup.enter="applyFilters"
+                        />
                     </div>
-                    <p class="text-xs text-muted">Daftar catatan pemasukan dan pengeluaran kas operasional terbaru toko.</p>
                 </div>
-                <Link
-                    href="/cash-flows"
-                    class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                >
-                    Lihat Semua & Filter Arus Kas
-                    <UIcon name="i-lucide-arrow-right" class="size-4" />
-                </Link>
+
+                <!-- Tipe -->
+                <div>
+                    <label class="block text-xs font-medium text-muted mb-1">Tipe</label>
+                    <select v-model="selectedType" class="w-full rounded-md border border-default bg-default px-2.5 py-1.5 text-xs outline-none focus:border-primary" @change="applyFilters">
+                        <option value="">Semua Tipe</option>
+                        <option value="income">Pemasukan (Kas Masuk)</option>
+                        <option value="expense">Pengeluaran (Kas Keluar)</option>
+                    </select>
+                </div>
+
+                <!-- Toko -->
+                <div>
+                    <label class="block text-xs font-medium text-muted mb-1">Cabang Toko</label>
+                    <select v-model="selectedStore" class="w-full rounded-md border border-default bg-default px-2.5 py-1.5 text-xs outline-none focus:border-primary" @change="applyFilters">
+                        <option value="">Semua Toko</option>
+                        <option v-for="st in options.stores" :key="st.value" :value="st.value">{{ st.label }}</option>
+                    </select>
+                </div>
+
+                <!-- Start Date -->
+                <div>
+                    <label class="block text-xs font-medium text-muted mb-1">Dari Tanggal</label>
+                    <input v-model="startDate" type="date" class="w-full rounded-md border border-default bg-default px-2.5 py-1.5 text-xs outline-none focus:border-primary" @change="applyFilters" />
+                </div>
+
+                <!-- End Date -->
+                <div>
+                    <label class="block text-xs font-medium text-muted mb-1">Sampai Tanggal</label>
+                    <input v-model="endDate" type="date" class="w-full rounded-md border border-default bg-default px-2.5 py-1.5 text-xs outline-none focus:border-primary" @change="applyFilters" />
+                </div>
             </div>
 
+            <div class="flex justify-end gap-2 pt-1 border-t border-default/40">
+                <button type="button" class="px-3 py-1.5 text-xs font-medium text-muted hover:text-highlighted border border-default rounded-md hover:bg-elevated" @click="resetFilters">
+                    Reset Filter
+                </button>
+                <button type="button" class="px-3 py-1.5 text-xs font-medium bg-primary text-inverted rounded-md hover:bg-primary/90" @click="applyFilters">
+                    Terapkan Filter
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Data Card -->
+        <div class="rounded-xl border border-default bg-default overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse text-left text-xs">
                     <thead>
@@ -375,10 +260,11 @@ watch(modalType, (newType) => {
                             <th class="p-3 font-semibold">Deskripsi</th>
                             <th class="p-3 font-semibold text-right">Nominal</th>
                             <th class="p-3 font-semibold text-center">Sumber / Referensi</th>
+                            <th class="p-3 font-semibold text-center w-16">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-default">
-                        <tr v-for="item in recentCashFlows.data" :key="item.id" class="hover:bg-elevated/20 transition-colors">
+                        <tr v-for="item in records.data" :key="item.id" class="hover:bg-elevated/20 transition-colors">
                             <td class="p-3 font-medium text-highlighted whitespace-nowrap">
                                 {{ formatDate(item.date) }}
                             </td>
@@ -416,11 +302,23 @@ watch(modalType, (newType) => {
                                     Sistem
                                 </span>
                             </td>
+                            <td class="p-3 text-center whitespace-nowrap">
+                                <button
+                                    v-if="item.is_manual"
+                                    type="button"
+                                    class="rounded p-1 text-red-500 hover:bg-red-500/10 transition-colors"
+                                    title="Hapus"
+                                    @click="deleteRecord(item.id)"
+                                >
+                                    <UIcon name="i-lucide-trash-2" class="size-4" />
+                                </button>
+                                <span v-else class="text-zinc-600 text-xs">-</span>
+                            </td>
                         </tr>
-                        <tr v-if="recentCashFlows.data.length === 0">
-                            <td colspan="7" class="p-8 text-center text-muted">
+                        <tr v-if="records.data.length === 0">
+                            <td colspan="8" class="p-8 text-center text-muted">
                                 <UIcon name="i-lucide-wallet" class="mx-auto size-10 text-muted/50" />
-                                <p class="mt-2 text-sm">Belum ada transaksi arus kas tercatat.</p>
+                                <p class="mt-2 text-sm">Belum ada data transaksi arus kas.</p>
                             </td>
                         </tr>
                     </tbody>
@@ -446,6 +344,7 @@ watch(modalType, (newType) => {
                 </div>
 
                 <form class="space-y-4" @submit.prevent="submitModal">
+                    <!-- Store -->
                     <div>
                         <label class="block text-xs font-medium text-highlighted mb-1">Toko / Cabang <span class="text-red-500">*</span></label>
                         <select v-model="modalForm.store_id" class="w-full rounded-md border border-default bg-default px-3 py-2 text-sm outline-none focus:border-primary" required>
@@ -453,6 +352,7 @@ watch(modalType, (newType) => {
                         </select>
                     </div>
 
+                    <!-- Category -->
                     <div>
                         <label class="block text-xs font-medium text-highlighted mb-1">Kategori Arus Kas <span class="text-red-500">*</span></label>
                         <select v-model="modalForm.category_id" class="w-full rounded-md border border-default bg-default px-3 py-2 text-sm outline-none focus:border-primary" required>
@@ -461,6 +361,7 @@ watch(modalType, (newType) => {
                         <span v-if="modalForm.errors.category_id" class="text-xs text-red-500">{{ modalForm.errors.category_id }}</span>
                     </div>
 
+                    <!-- Date & Amount -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-medium text-highlighted mb-1">Tanggal <span class="text-red-500">*</span></label>
@@ -473,11 +374,13 @@ watch(modalType, (newType) => {
                         </div>
                     </div>
 
+                    <!-- Description -->
                     <div>
                         <label class="block text-xs font-medium text-highlighted mb-1">Deskripsi / Catatan</label>
                         <textarea v-model="modalForm.description" rows="3" placeholder="Deskripsi transaksi kas..." class="w-full rounded-md border border-default bg-default px-3 py-2 text-sm outline-none focus:border-primary"></textarea>
                     </div>
 
+                    <!-- Modal Actions -->
                     <div class="flex justify-end gap-2 pt-3 border-t border-default">
                         <button type="button" class="px-4 py-2 text-xs font-medium text-muted hover:text-highlighted border border-default rounded-md hover:bg-elevated" @click="closeModal">
                             Batal

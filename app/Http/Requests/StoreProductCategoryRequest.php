@@ -22,6 +22,8 @@ class StoreProductCategoryRequest extends FormRequest
             'parent_id' => ['nullable', 'uuid', Rule::exists('product_categories', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'pricing_mode' => ['required', Rule::in(['fixed', 'editable'])],
+            'income_cash_flow_category_id' => ['nullable', 'uuid', Rule::exists('cash_flow_categories', 'id')],
+            'expense_cash_flow_category_id' => ['nullable', 'uuid', Rule::exists('cash_flow_categories', 'id')],
         ];
     }
 }

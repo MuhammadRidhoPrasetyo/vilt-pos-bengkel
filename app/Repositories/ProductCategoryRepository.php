@@ -11,7 +11,7 @@ class ProductCategoryRepository
     public function paginate(?string $search = null): LengthAwarePaginator
     {
         return ProductCategory::query()
-            ->with(['store:id,name', 'parent:id,name'])
+            ->with(['store:id,name', 'parent:id,name', 'incomeCashFlowCategory:id,name', 'expenseCashFlowCategory:id,name'])
             ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->latest()
             ->paginate(10)

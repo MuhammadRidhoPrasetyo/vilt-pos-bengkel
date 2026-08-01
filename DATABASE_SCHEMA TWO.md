@@ -484,14 +484,16 @@ Urutan ini memastikan parent product, opsi atribut, varian, gudang, dan lokasi s
 
 Tabel kategori produk.
 
-| Field        | Type      | Attributes                                    | Keterangan                     |
-| ------------ | --------- | --------------------------------------------- | ------------------------------ |
-| id           | bigint    | PRIMARY KEY, AUTO INCREMENT                   |                                |
-| parent_id    | bigint    | NULLABLE, FK (product_categories), INDEX      | Kategori induk                 |
-| name         | string    |                                               | Nama kategori                  |
-| pricing_mode | enum      | VALUES: 'fixed', 'editable', DEFAULT: 'fixed' | Mode harga (tetap/bisa diubah) |
-| created_at   | timestamp |                                               |                                |
-| updated_at   | timestamp |                                               |                                |
+| Field                         | Type      | Attributes                                    | Keterangan                           |
+| ----------------------------- | --------- | --------------------------------------------- | ------------------------------------ |
+| id                            | uuid      | PRIMARY KEY                                   |                                      |
+| parent_id                     | uuid      | NULLABLE, FK (product_categories), INDEX      | Kategori induk                       |
+| name                          | string    |                                               | Nama kategori                        |
+| pricing_mode                  | enum      | VALUES: 'fixed', 'editable', DEFAULT: 'fixed' | Mode harga (tetap/bisa diubah)       |
+| income_cash_flow_category_id  | uuid      | NULLABLE, FK (cash_flow_categories)           | Kategori Arus Kas Pemasukan (Income) |
+| expense_cash_flow_category_id | uuid      | NULLABLE, FK (cash_flow_categories)           | Kategori Arus Kas Pengeluaran (Cost) |
+| created_at                    | timestamp |                                               |                                      |
+| updated_at                    | timestamp |                                               |                                      |
 
 ---
 

@@ -23,6 +23,10 @@ class ProductCategoryResource extends JsonResource
             ]),
             'name' => $this->name,
             'pricing_mode' => $this->pricing_mode,
+            'income_cash_flow_category_id' => $this->income_cash_flow_category_id,
+            'expense_cash_flow_category_id' => $this->expense_cash_flow_category_id,
+            'income_cash_flow_category' => $this->whenLoaded('incomeCashFlowCategory', fn () => $this->incomeCashFlowCategory ? ['id' => $this->incomeCashFlowCategory->id, 'name' => $this->incomeCashFlowCategory->name] : null),
+            'expense_cash_flow_category' => $this->whenLoaded('expenseCashFlowCategory', fn () => $this->expenseCashFlowCategory ? ['id' => $this->expenseCashFlowCategory->id, 'name' => $this->expenseCashFlowCategory->name] : null),
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\CashFlow;
+use App\Models\CashFlowCategory;
 use App\Models\InventoryBatch;
 use App\Models\InventoryMovement;
 use App\Models\ProductStock;
@@ -204,6 +206,24 @@ class TransactionService
                         'completed_at' => $serviceOrder->completed_at ?: $now,
                     ]);
                 }
+            }
+
+            // Record Cash Flow (Income)
+            $cashCategory = CashFlowCategory::where('name', 'Penjualan Barang / POS')->first()
+                ?? CashFlowCategory::where('type', 'income')->first();
+
+            if ($cashCategory && $paidAmount > 0) {
+                CashFlow::create([
+                    'store_id' => $storeId,
+                    'user_id' => $userId,
+                    'category_id' => $cashCategory->id,
+                    'amount' => min($paidAmount, $grandTotal),
+                    'date' => $now->toDateString(),
+                    'type' => 'income',
+                    'description' => "Penjualan POS #{$number}",
+                    'reference_type' => Transaction::class,
+                    'reference_id' => $transaction->id,
+                ]);
             }
 
             return $transaction->fresh(['store', 'user', 'customer', 'payment', 'serviceOrder', 'items.productVariant.product', 'items.batches.inventoryBatch', 'paymentAttempts.payment']);

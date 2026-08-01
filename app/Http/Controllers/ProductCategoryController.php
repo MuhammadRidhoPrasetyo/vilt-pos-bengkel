@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductCategoryRequest;
 use App\Http\Requests\UpdateProductCategoryRequest;
 use App\Http\Resources\ProductCategoryResource;
+use App\Models\CashFlowCategory;
 use App\Models\ProductCategory;
 use App\Repositories\ProductCategoryRepository;
 use App\Repositories\StoreRepository;
@@ -24,12 +25,17 @@ class ProductCategoryController extends Controller
 
     public function index(Request $request): Response
     {
+        $incomeCategories = CashFlowCategory::where('is_active', true)->where('type', 'income')->orderBy('name')->get();
+        $expenseCategories = CashFlowCategory::where('is_active', true)->where('type', 'expense')->orderBy('name')->get();
+
         return Inertia::render('product-categories/index', [
             'records' => ProductCategoryResource::collection($this->productCategories->paginate($request->string('search')->toString())),
             'filters' => ['search' => $request->string('search')->toString()],
             'options' => [
                 'stores' => $this->stores->options()->map(fn ($store) => ['label' => $store->name, 'value' => $store->id]),
                 'productCategories' => $this->productCategories->options()->map(fn ($category) => ['label' => $category->name, 'value' => $category->id]),
+                'incomeCashFlowCategories' => $incomeCategories->map(fn ($cat) => ['label' => $cat->name, 'value' => $cat->id]),
+                'expenseCashFlowCategories' => $expenseCategories->map(fn ($cat) => ['label' => $cat->name, 'value' => $cat->id]),
             ],
             'config' => [
                 'title' => 'Product Categories',
@@ -42,6 +48,8 @@ class ProductCategoryController extends Controller
                     ['name' => 'parent_id', 'label' => 'Parent Category', 'type' => 'select', 'optionKey' => 'productCategories', 'table' => true, 'displayKey' => 'parent.name'],
                     ['name' => 'name', 'label' => 'Nama', 'required' => true, 'table' => true],
                     ['name' => 'pricing_mode', 'label' => 'Mode Harga', 'type' => 'select', 'required' => true, 'table' => true, 'options' => [['label' => 'Fixed', 'value' => 'fixed'], ['label' => 'Editable', 'value' => 'editable']]],
+                    ['name' => 'income_cash_flow_category_id', 'label' => 'Kategori Arus Kas Pemasukan', 'type' => 'select', 'optionKey' => 'incomeCashFlowCategories', 'table' => true, 'displayKey' => 'income_cash_flow_category.name'],
+                    ['name' => 'expense_cash_flow_category_id', 'label' => 'Kategori Arus Kas Pengeluaran', 'type' => 'select', 'optionKey' => 'expenseCashFlowCategories', 'table' => true, 'displayKey' => 'expense_cash_flow_category.name'],
                 ],
             ],
         ]);

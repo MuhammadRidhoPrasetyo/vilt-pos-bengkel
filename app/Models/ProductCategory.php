@@ -24,4 +24,14 @@ class ProductCategory extends BaseModel
     {
         return $this->hasMany(Product::class);
     }
+
+    public function incomeCashFlowCategory(): BelongsTo
+    {
+        return $this->belongsTo(CashFlowCategory::class, 'income_cash_flow_category_id');
+    }
+
+    public function expenseCashFlowCategory(): BelongsTo
+    {
+        return $this->belongsTo(CashFlowCategory::class, 'expense_cash_flow_category_id');
+    }
 }
