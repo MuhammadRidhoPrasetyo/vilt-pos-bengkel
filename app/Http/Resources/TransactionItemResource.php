@@ -33,6 +33,7 @@ class TransactionItemResource extends JsonResource
             'line_cost_total' => (float) $this->line_cost_total,
             'line_profit' => (float) $this->line_profit,
             'price_edited' => (bool) $this->price_edited,
+            'batches' => TransactionItemBatchResource::collection($this->whenLoaded('batches')),
         ];
     }
 }

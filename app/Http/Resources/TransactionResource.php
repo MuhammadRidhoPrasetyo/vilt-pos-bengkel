@@ -38,6 +38,9 @@ class TransactionResource extends JsonResource
             'grand_total' => (float) $this->grand_total,
             'paid_amount' => (float) $this->paid_amount,
             'change_amount' => (float) $this->change_amount,
+            'paid_net_amount' => max(0, (float) $this->paid_amount - (float) $this->change_amount),
+            'outstanding_amount' => max(0, (float) $this->grand_total - ((float) $this->paid_amount - (float) $this->change_amount)),
+            'is_payment_complete' => ((float) $this->paid_amount - (float) $this->change_amount) >= (float) $this->grand_total,
             'payment_status' => $this->payment_status,
             'total_cost' => (float) $this->total_cost,
             'total_profit' => (float) $this->total_profit,
@@ -45,6 +48,7 @@ class TransactionResource extends JsonResource
             'note' => $this->note,
             'created_at' => $this->created_at?->toDateTimeString(),
             'items' => TransactionItemResource::collection($this->whenLoaded('items')),
+            'payment_attempts' => TransactionPaymentAttemptResource::collection($this->whenLoaded('paymentAttempts')),
         ];
     }
 }

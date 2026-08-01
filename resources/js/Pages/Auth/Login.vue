@@ -7,9 +7,15 @@ const form = useForm({
     remember: false,
 });
 
-const submit = () => {
+const submit = (event) => {
+    const formData = new FormData(event.currentTarget);
+
+    form.email = String(formData.get('email') ?? '');
+    form.password = String(formData.get('password') ?? '');
+    form.remember = formData.has('remember');
+
     form.post('/login', {
-        onFinish: () => form.reset('password'),
+        onError: () => form.reset('password'),
     });
 };
 </script>
@@ -27,11 +33,11 @@ const submit = () => {
                 </div>
 
                 <UFormField label="Email" name="email" :error="form.errors.email">
-                    <UInput v-model="form.email" type="email" autocomplete="username" icon="i-lucide-mail" class="w-full" required autofocus />
+                    <UInput v-model="form.email" name="email" type="email" autocomplete="username" icon="i-lucide-mail" class="w-full" required autofocus />
                 </UFormField>
 
                 <UFormField label="Password" name="password" :error="form.errors.password">
-                    <UInput v-model="form.password" type="password" autocomplete="current-password" icon="i-lucide-lock" class="w-full" required />
+                    <UInput v-model="form.password" name="password" type="password" autocomplete="current-password" icon="i-lucide-lock" class="w-full" required />
                 </UFormField>
 
                 <div class="flex items-center justify-between gap-3">

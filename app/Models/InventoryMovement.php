@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class InventoryMovement extends BaseModel
 {
@@ -12,6 +13,11 @@ class InventoryMovement extends BaseModel
             'quantity' => 'integer',
             'balance_after' => 'integer',
         ];
+    }
+
+    public function reference(): MorphTo
+    {
+        return $this->morphTo(__FUNCTION__, 'reference_type', 'reference_id');
     }
 
     public function productVariant(): BelongsTo

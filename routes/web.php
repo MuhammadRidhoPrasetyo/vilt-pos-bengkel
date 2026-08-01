@@ -19,6 +19,8 @@ use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceOrderController;
+use App\Http\Controllers\StockAdjustmentController;
+use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UnitController;
@@ -29,12 +31,16 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    return auth()->check() ? redirect()->route('home') : redirect()->route('login');
 });
 
 Route::get('/home', function () {
-    return Inertia::render('Dashboard');
+    return Inertia::render('Portal');
 })->middleware(['auth'])->name('home');
+
+Route::get('/dashboard', function () {
+    return Inertia::render('Dashboard');
+})->middleware(['auth'])->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
     Route::resource('stores', StoreController::class);
@@ -59,11 +65,18 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('services/{service}/status', [ServiceOrderController::class, 'updateStatus'])->name('services.status.update');
     Route::resource('services', ServiceOrderController::class);
     Route::get('transactions/{transaction}/print', [TransactionController::class, 'print'])->name('transactions.print');
+    Route::post('transactions/{transaction}/payment-attempts', [TransactionController::class, 'storePaymentAttempt'])->name('transactions.payment-attempts.store');
     Route::resource('transactions', TransactionController::class);
     Route::get('printers/{printer}/test', [PrinterController::class, 'test'])->name('printers.test');
     Route::resource('printers', PrinterController::class);
     Route::resource('warehouses', WarehouseController::class);
     Route::resource('warehouse-locations', WarehouseLocationController::class);
+    Route::post('stock-adjustments/{stockAdjustment}/post', [StockAdjustmentController::class, 'post'])->name('stock-adjustments.post');
+    Route::post('stock-adjustments/{stockAdjustment}/cancel', [StockAdjustmentController::class, 'cancel'])->name('stock-adjustments.cancel');
+    Route::resource('stock-adjustments', StockAdjustmentController::class);
+    Route::post('stock-transfers/{stockTransfer}/post', [StockTransferController::class, 'post'])->name('stock-transfers.post');
+    Route::post('stock-transfers/{stockTransfer}/cancel', [StockTransferController::class, 'cancel'])->name('stock-transfers.cancel');
+    Route::resource('stock-transfers', StockTransferController::class);
     Route::resource('roles', RoleController::class);
     Route::resource('permissions', PermissionController::class);
     Route::resource('users', UserController::class);

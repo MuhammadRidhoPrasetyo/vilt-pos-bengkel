@@ -316,9 +316,13 @@ const links = computed(() => [
             label: 'Gudang',
             icon: 'i-lucide-warehouse',
             active: currentPath.value.startsWith('/warehouses')
-                || currentPath.value.startsWith('/warehouse-locations'),
+                || currentPath.value.startsWith('/warehouse-locations')
+                || currentPath.value.startsWith('/stock-adjustments')
+                || currentPath.value.startsWith('/stock-transfers'),
             defaultOpen: currentPath.value.startsWith('/warehouses')
-                || currentPath.value.startsWith('/warehouse-locations'),
+                || currentPath.value.startsWith('/warehouse-locations')
+                || currentPath.value.startsWith('/stock-adjustments')
+                || currentPath.value.startsWith('/stock-transfers'),
             type: 'trigger',
             children: [
                 {
@@ -328,6 +332,14 @@ const links = computed(() => [
                 {
                     label: 'Lokasi Warehouse',
                     onSelect: () => navigateTo('/warehouse-locations'),
+                },
+                {
+                    label: 'Stock Adjustment',
+                    onSelect: () => navigateTo('/stock-adjustments'),
+                },
+                {
+                    label: 'Stock Transfer',
+                    onSelect: () => navigateTo('/stock-transfers'),
                 },
             ],
         },

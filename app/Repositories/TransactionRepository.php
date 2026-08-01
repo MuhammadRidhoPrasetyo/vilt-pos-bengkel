@@ -44,6 +44,9 @@ class TransactionRepository
                 'serviceOrder.vehicle',
                 'items.productVariant.product',
                 'items.discountType',
+                'items.batches.inventoryBatch.warehouse',
+                'paymentAttempts.payment',
+                'paymentAttempts.user',
             ])
             ->findOrFail($id);
     }

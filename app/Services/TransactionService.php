@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\InventoryBatch;
+use App\Models\InventoryMovement;
 use App\Models\ProductStock;
-use App\Models\ProductVariant;
 use App\Models\ServiceOrder;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class TransactionService
@@ -48,7 +50,6 @@ class TransactionService
                 $lineTotal = max(0, $lineSubtotal - $itemDiscAmount);
                 $finalUnitPrice = $qty > 0 ? ($lineTotal / $qty) : $unitPrice;
 
-                // Determine unit cost from ProductStock or variant
                 $unitCost = 0;
                 $stockId = null;
 
@@ -63,11 +64,7 @@ class TransactionService
                         $stock = ProductStock::where('product_variant_id', $variantId)->first();
                     }
 
-                    if ($stock) {
-                        $variantModel = ProductVariant::find($variantId);
-                        $unitCost = (float) ($variantModel?->default_purchase_price ?? 0);
-                        $stockId = $stock->id;
-                    }
+                    $stockId = $stock?->id;
                 }
 
                 $lineCostTotal = $unitCost * $qty;
@@ -157,19 +154,44 @@ class TransactionService
                 'note' => $data['note'] ?? null,
             ]);
 
-            // Save Items & deduct stock
+            // Save Items, allocate FIFO batches & deduct stock
             foreach ($processedItems as $itemRow) {
                 $itemRow['transaction_id'] = $transaction->id;
                 $itemRow['store_id'] = $storeId;
-                TransactionItem::create($itemRow);
+                $transactionItem = TransactionItem::create($itemRow);
 
-                // Deduct stock if part
                 if ($itemRow['item_type'] === 'part' && ! empty($itemRow['product_stock_id'])) {
                     $stockModel = ProductStock::find($itemRow['product_stock_id']);
                     if ($stockModel) {
                         $stockModel->decrement('quantity', $itemRow['quantity']);
                     }
+
+                    $batchTotals = $this->allocateBatches($transactionItem, $storeId);
+                    $transactionItem->update([
+                        'unit_cost' => $transactionItem->quantity > 0 ? $batchTotals['total_cost'] / $transactionItem->quantity : 0,
+                        'line_cost_total' => $batchTotals['total_cost'],
+                        'line_profit' => (float) $transactionItem->line_total - $batchTotals['total_cost'],
+                    ]);
                 }
+            }
+
+            $transaction->update([
+                'total_cost' => $transaction->items()->sum('line_cost_total'),
+                'total_profit' => (float) $transaction->grand_total - (float) $transaction->items()->sum('line_cost_total'),
+            ]);
+
+            if ($paidAmount > 0) {
+                $transaction->paymentAttempts()->create([
+                    'user_id' => $userId,
+                    'payment_id' => $data['payment_id'] ?? null,
+                    'amount' => min($paidAmount, $grandTotal),
+                    'amount_given' => $paidAmount,
+                    'change' => $changeAmount,
+                    'paid_at' => $now,
+                    'metadata' => [
+                        'source' => 'initial_checkout',
+                    ],
+                ]);
             }
 
             // Link & resolve ServiceOrder status if applicable
@@ -184,7 +206,51 @@ class TransactionService
                 }
             }
 
-            return $transaction->fresh(['store', 'user', 'customer', 'payment', 'serviceOrder', 'items.productVariant.product']);
+            return $transaction->fresh(['store', 'user', 'customer', 'payment', 'serviceOrder', 'items.productVariant.product', 'items.batches.inventoryBatch', 'paymentAttempts.payment']);
+        });
+    }
+
+    public function recordPaymentAttempt(Transaction $transaction, array $data, string $userId): Transaction
+    {
+        return DB::transaction(function () use ($transaction, $data, $userId) {
+            $transaction->refresh();
+
+            $amountGiven = (float) $data['amount_given'];
+            $outstandingAmount = $this->outstandingAmount($transaction);
+            $amount = min($amountGiven, $outstandingAmount);
+            $change = max(0, $amountGiven - $outstandingAmount);
+
+            $transaction->paymentAttempts()->create([
+                'user_id' => $userId,
+                'payment_id' => $data['payment_id'] ?? null,
+                'amount' => $amount,
+                'amount_given' => $amountGiven,
+                'change' => $change,
+                'paid_at' => $data['paid_at'] ?? now(),
+                'metadata' => [
+                    'note' => $data['note'] ?? null,
+                    'source' => 'transaction_show',
+                ],
+            ]);
+
+            $newPaidAmount = (float) $transaction->paid_amount + $amountGiven;
+            $newChangeAmount = (float) $transaction->change_amount + $change;
+            $netPaidAmount = $newPaidAmount - $newChangeAmount;
+
+            $paymentStatus = 'partial';
+            if ($netPaidAmount <= 0) {
+                $paymentStatus = 'unpaid';
+            } elseif ($netPaidAmount >= (float) $transaction->grand_total) {
+                $paymentStatus = 'paid';
+            }
+
+            $transaction->update([
+                'paid_amount' => $newPaidAmount,
+                'change_amount' => $newChangeAmount,
+                'payment_status' => $paymentStatus,
+            ]);
+
+            return $transaction->fresh(['store', 'user', 'customer', 'payment', 'serviceOrder', 'items.productVariant.product', 'items.batches.inventoryBatch', 'paymentAttempts.payment', 'paymentAttempts.user']);
         });
     }
 
@@ -192,7 +258,13 @@ class TransactionService
     {
         DB::transaction(function () use ($transaction) {
             // Restore product stocks for parts
-            foreach ($transaction->items as $item) {
+            foreach ($transaction->items()->with('batches.inventoryBatch')->get() as $item) {
+                foreach ($item->batches as $itemBatch) {
+                    if ($itemBatch->inventoryBatch) {
+                        $itemBatch->inventoryBatch->increment('current_quantity', $itemBatch->quantity);
+                    }
+                }
+
                 if ($item->item_type === 'part' && ! empty($item->product_stock_id)) {
                     $stockModel = ProductStock::find($item->product_stock_id);
                     if ($stockModel) {
@@ -215,6 +287,78 @@ class TransactionService
             $transaction->items()->delete();
             $transaction->delete();
         });
+    }
+
+    /**
+     * @return array{total_cost: float}
+     */
+    private function allocateBatches(TransactionItem $transactionItem, string $storeId): array
+    {
+        if (! $transactionItem->product_variant_id) {
+            return ['total_cost' => 0.0];
+        }
+
+        $remainingQuantity = (int) $transactionItem->quantity;
+        $totalCost = 0.0;
+
+        $batches = $this->availableBatches($transactionItem->product_variant_id, $storeId);
+
+        foreach ($batches as $batch) {
+            if ($remainingQuantity <= 0) {
+                break;
+            }
+
+            $quantity = min($remainingQuantity, (int) $batch->current_quantity);
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            $unitCost = (float) $batch->unit_cost;
+            $transactionItem->batches()->create([
+                'inventory_batch_id' => $batch->id,
+                'quantity' => $quantity,
+                'unit_cost' => $unitCost,
+            ]);
+
+            $batch->decrement('current_quantity', $quantity);
+            $remainingQuantity -= $quantity;
+            $totalCost += $quantity * $unitCost;
+
+            $totalStockBalance = (int) ProductStock::where('product_variant_id', $transactionItem->product_variant_id)
+                ->where('warehouse_id', $batch->warehouse_id)
+                ->sum('quantity');
+
+            InventoryMovement::create([
+                'warehouse_id' => $batch->warehouse_id,
+                'product_variant_id' => $transactionItem->product_variant_id,
+                'inventory_batch_id' => $batch->id,
+                'reference_type' => Transaction::class,
+                'reference_id' => $transactionItem->transaction_id,
+                'type' => 'out',
+                'quantity' => $quantity,
+                'balance_after' => $totalStockBalance,
+            ]);
+        }
+
+        return ['total_cost' => $totalCost];
+    }
+
+    private function availableBatches(string $productVariantId, string $storeId): Collection
+    {
+        return InventoryBatch::query()
+            ->with('warehouse')
+            ->where('product_variant_id', $productVariantId)
+            ->where('current_quantity', '>', 0)
+            ->whereHas('warehouse', fn ($query) => $query->where('store_id', $storeId))
+            ->orderBy('received_at')
+            ->orderBy('created_at')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    private function outstandingAmount(Transaction $transaction): float
+    {
+        return max(0, (float) $transaction->grand_total - ((float) $transaction->paid_amount - (float) $transaction->change_amount));
     }
 
     private function generateNumber(Carbon $date): string

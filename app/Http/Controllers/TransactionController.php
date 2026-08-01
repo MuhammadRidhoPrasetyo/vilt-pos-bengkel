@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreTransactionPaymentAttemptRequest;
 use App\Http\Requests\StoreTransactionRequest;
 use App\Http\Resources\ProductVariantResource;
 use App\Http\Resources\ServiceOrderResource;
@@ -125,7 +126,23 @@ class TransactionController extends Controller
 
         return Inertia::render('transactions/show', [
             'transaction' => new TransactionResource($transaction),
+            'paymentOptions' => Payment::query()
+                ->orderBy('name')
+                ->get()
+                ->map(fn ($payment) => [
+                    'label' => $payment->name,
+                    'value' => $payment->id,
+                    'type' => $payment->type,
+                ]),
         ]);
+    }
+
+    public function storePaymentAttempt(StoreTransactionPaymentAttemptRequest $request, Transaction $transaction): RedirectResponse
+    {
+        $this->service->recordPaymentAttempt($transaction, $request->validated(), $request->user()->id);
+
+        return redirect()->route('transactions.show', $transaction->id)
+            ->with('success', 'Pembayaran transaksi berhasil dicatat.');
     }
 
     public function print(string $id): Response
