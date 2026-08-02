@@ -16,11 +16,16 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseService
 {
+    public function __construct(
+        protected DocumentSequenceService $documentSequenceService
+    ) {}
+
     public function create(array $data, int $userId): Purchase
     {
         return DB::transaction(function () use ($data, $userId) {
             $purchaseDate = Carbon::parse($data['purchase_date']);
-            $number = $this->generateNumber($purchaseDate);
+            $storeId = $data['store_id'] ?? null;
+            $number = $this->generateNumber($purchaseDate, $storeId);
 
             // 1. Calculate item subtotal and totals
             $rawItemsSubtotal = 0;
@@ -233,11 +238,8 @@ class PurchaseService
         });
     }
 
-    private function generateNumber(Carbon $date): string
+    private function generateNumber(Carbon $date, ?string $storeId = null): string
     {
-        $prefix = 'PO-'.$date->format('Ymd');
-        $countToday = Purchase::whereDate('created_at', $date->toDateString())->count() + 1;
-
-        return $prefix.'-'.str_pad($countToday, 4, '0', STR_PAD_LEFT);
+        return $this->documentSequenceService->generate('purchase', $storeId, $date);
     }
 }

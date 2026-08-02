@@ -10,11 +10,16 @@ use Illuminate\Support\Facades\DB;
 
 class ServiceOrderService
 {
+    public function __construct(
+        protected DocumentSequenceService $documentSequenceService
+    ) {}
+
     public function create(array $data): ServiceOrder
     {
         return DB::transaction(function () use ($data) {
             $now = now();
-            $number = $this->generateNumber($now);
+            $storeId = $data['store_id'] ?? null;
+            $number = $this->generateNumber($now, $storeId);
 
             $estimatedTotal = 0;
             foreach ($data['items'] as $item) {
@@ -230,11 +235,8 @@ class ServiceOrderService
         });
     }
 
-    private function generateNumber(Carbon $date): string
+    private function generateNumber(Carbon $date, ?string $storeId = null): string
     {
-        $prefix = 'SO-'.$date->format('Ymd');
-        $countToday = ServiceOrder::whereDate('created_at', $date->toDateString())->count() + 1;
-
-        return $prefix.'-'.str_pad($countToday, 4, '0', STR_PAD_LEFT);
+        return $this->documentSequenceService->generate('service_order', $storeId, $date);
     }
 }

@@ -7,21 +7,29 @@ use App\Models\InventoryMovement;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\StockAdjustment;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class StockAdjustmentService
 {
+    public function __construct(
+        protected DocumentSequenceService $documentSequenceService
+    ) {}
+
     public function create(array $data, string $userId): StockAdjustment
     {
         return DB::transaction(function () use ($data) {
+            $occurredAt = isset($data['occurred_at']) ? Carbon::parse($data['occurred_at']) : now();
+            $storeId = $data['store_id'] ?? null;
+
             $adjustment = StockAdjustment::create([
                 'store_id' => $data['store_id'],
                 'status' => 'draft',
                 'posted_by' => null,
-                'reference_number' => $data['reference_number'] ?? $this->generateNumber(),
-                'occurred_at' => $data['occurred_at'] ?? now(),
+                'reference_number' => $data['reference_number'] ?? $this->generateNumber($storeId, $occurredAt),
+                'occurred_at' => $occurredAt,
                 'note' => $data['note'] ?? null,
             ]);
 
@@ -216,8 +224,8 @@ class StockAdjustmentService
         }
     }
 
-    private function generateNumber(): string
+    private function generateNumber(?string $storeId = null, ?Carbon $date = null): string
     {
-        return 'ADJ-'.now()->format('Ymd-His');
+        return $this->documentSequenceService->generate('stock_adjustment', $storeId, $date);
     }
 }

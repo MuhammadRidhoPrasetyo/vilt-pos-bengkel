@@ -16,13 +16,16 @@ use Illuminate\Support\Facades\DB;
 
 class TransactionService
 {
+    public function __construct(
+        protected DocumentSequenceService $documentSequenceService
+    ) {}
+
     public function create(array $data, string $userId): Transaction
     {
         return DB::transaction(function () use ($data, $userId) {
             $now = now();
-            $number = $this->generateNumber($now);
-
             $storeId = $data['store_id'];
+            $number = $this->generateNumber($now, $storeId);
             $itemsData = $data['items'] ?? [];
 
             $subtotal = 0;
@@ -381,11 +384,8 @@ class TransactionService
         return max(0, (float) $transaction->grand_total - ((float) $transaction->paid_amount - (float) $transaction->change_amount));
     }
 
-    private function generateNumber(Carbon $date): string
+    private function generateNumber(Carbon $date, ?string $storeId = null): string
     {
-        $prefix = 'POS-'.$date->format('Ymd');
-        $countToday = Transaction::whereDate('created_at', $date->toDateString())->count() + 1;
-
-        return $prefix.'-'.str_pad($countToday, 4, '0', STR_PAD_LEFT);
+        return $this->documentSequenceService->generate('transaction', $storeId, $date);
     }
 }

@@ -1193,17 +1193,23 @@ Tabel konfigurasi printer toko.
 
 ### 📋 document_sequences
 
-Tabel sequence/counter nomor dokumen.
+Tabel sequence/counter penomoran dokumen terpusat.
 
-| Field      | Type      | Attributes                     | Keterangan                            |
-| ---------- | --------- | ------------------------------ | ------------------------------------- |
-| id         | uuid      | PRIMARY KEY                    |                                       |
-| type       | string    |                                | Tipe dokumen (TRX, SRV, PUR, SERVICE) |
-| store_id   | uuid      | NULLABLE, FK (stores, CASCADE) | Toko (jika multi-cabang)              |
-| sequence   | integer   | DEFAULT: 0                     | Counter sequence                      |
-| year       | integer   | NULLABLE                       | Tahun                                 |
-| created_at | timestamp |                                |                                       |
-| updated_at | timestamp |                                |                                       |
+| Field           | Type      | Attributes                     | Keterangan                                                                      |
+| --------------- | --------- | ------------------------------ | ------------------------------------------------------------------------------- |
+| id              | uuid      | PRIMARY KEY                    |                                                                                 |
+| type            | string    |                                | Tipe dokumen (`transaction`, `service_order`, `purchase`, `stock_adjustment`, `stock_transfer`) |
+| store_id        | uuid      | NULLABLE, FK (stores, CASCADE) | Toko/Cabang bengkel (null jika global)                                          |
+| prefix          | string    | NULLABLE                       | Kode awalan dokumen (misal `TRX`, `WO`, `PO`, `SA`, `ST`)                        |
+| format_pattern  | string    | DEFAULT: `{STORE_CODE}/{PREFIX}/{YYYY}{MM}/{SEQ:4}` | Pattern format penomoran dengan token `{STORE_CODE}`, `{STORE_NAME}`, `{YYYY}`, dll |
+| reset_frequency | string    | DEFAULT: `monthly`             | Frekuensi reset urutan (`daily`, `monthly`, `yearly`, `never`)                 |
+| sequence        | integer   | DEFAULT: 0                     | Counter sequence saat ini                                                       |
+| day             | integer   | NULLABLE                       | Tanggal (untuk reset harian)                                                    |
+| month           | integer   | NULLABLE                       | Bulan (untuk reset bulanan)                                                     |
+| year            | integer   | NULLABLE                       | Tahun (untuk reset tahunan)                                                     |
+| padding         | integer   | DEFAULT: 4                     | Digit angka urut (misal 4 = 0001)                                               |
+| created_at      | timestamp |                                |                                                                                 |
+| updated_at      | timestamp |                                |                                                                                 |
 
 **Unique Index:** (type, store_id, year)
 

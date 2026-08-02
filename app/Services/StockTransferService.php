@@ -7,23 +7,30 @@ use App\Models\InventoryMovement;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\StockTransfer;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class StockTransferService
 {
+    public function __construct(
+        protected DocumentSequenceService $documentSequenceService
+    ) {}
+
     public function create(array $data, string $userId): StockTransfer
     {
         return DB::transaction(function () use ($data, $userId) {
             $this->ensureDifferentStores($data['from_store_id'], $data['to_store_id']);
+            $occurredAt = isset($data['occurred_at']) ? Carbon::parse($data['occurred_at']) : now();
+            $fromStoreId = $data['from_store_id'] ?? null;
 
             $transfer = StockTransfer::create([
                 'from_store_id' => $data['from_store_id'],
                 'to_store_id' => $data['to_store_id'],
                 'status' => 'draft',
-                'reference_number' => $data['reference_number'] ?? $this->generateNumber(),
-                'occurred_at' => $data['occurred_at'] ?? now(),
+                'reference_number' => $data['reference_number'] ?? $this->generateNumber($fromStoreId, $occurredAt),
+                'occurred_at' => $occurredAt,
                 'created_by' => $userId,
                 'posted_by' => null,
                 'posted_at' => null,
@@ -244,8 +251,8 @@ class StockTransferService
         }
     }
 
-    private function generateNumber(): string
+    private function generateNumber(?string $storeId = null, ?Carbon $date = null): string
     {
-        return 'TRF-'.now()->format('Ymd-His');
+        return $this->documentSequenceService->generate('stock_transfer', $storeId, $date);
     }
 }
