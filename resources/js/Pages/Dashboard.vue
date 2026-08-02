@@ -23,6 +23,27 @@ const props = defineProps({
         type: Object,
         default: () => ({ data: [] }),
     },
+    stockAlerts: {
+        type: Array,
+        default: () => [],
+    },
+    stockSummary: {
+        type: Object,
+        default: () => ({
+            out_of_stock_count: 0,
+            below_min_count: 0,
+            approaching_min_count: 0,
+            total_alert_count: 0,
+        }),
+    },
+    canFilterStore: {
+        type: Boolean,
+        default: false,
+    },
+    stockStoreId: {
+        type: String,
+        default: '',
+    },
     options: {
         type: Object,
         default: () => ({ stores: [], incomeCategories: [], expenseCategories: [] }),
@@ -156,6 +177,27 @@ const formatDate = (dateStr) => {
     const d = new Date(dateStr);
     return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
 };
+
+// Stock Alert Filter Logic
+const selectedStockStore = ref(props.stockStoreId || '');
+const activeStockTab = ref('all'); // 'all' | 'out_of_stock' | 'below_min' | 'approaching_min'
+
+const changeStockStoreFilter = () => {
+    router.get('/dashboard', {
+        stock_store_id: selectedStockStore.value || undefined,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
+const filteredStockAlerts = computed(() => {
+    if (activeStockTab.value === 'all') {
+        return props.stockAlerts;
+    }
+    return props.stockAlerts.filter((item) => item.alert_status === activeStockTab.value);
+});
 
 // Modal Input Transaksi Kas Cepat dari Dashboard
 const modalOpen = ref(false);
@@ -342,6 +384,160 @@ watch(modalType, (newType) => {
                 <div class="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
                     <UIcon name="i-lucide-shopping-cart" class="size-6" />
                 </div>
+            </div>
+        </div>
+
+        <!-- Stock Alert & Restock Section -->
+        <div class="space-y-4 rounded-xl border border-default bg-default p-5 shadow-xs">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-default pb-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <UIcon name="i-lucide-alert-triangle" class="size-5 text-amber-500" />
+                        <h2 class="text-lg font-bold text-highlighted">Peringatan Stok Barang & Restok</h2>
+                        <span class="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-bold text-rose-400 border border-rose-500/20">
+                            {{ stockSummary.total_alert_count }} Barang Perlu Perhatian
+                        </span>
+                    </div>
+                    <p class="text-xs text-muted">Daftar produk yang habis (0), berada di bawah stok minimal, atau mendekati stok minimal.</p>
+                </div>
+
+                <!-- Store Filter Selector (Visible only for Owner / Multi-store Manager) -->
+                <div v-if="canFilterStore" class="flex items-center gap-2">
+                    <label class="text-xs font-medium text-muted shrink-0">Filter Cabang:</label>
+                    <select
+                        v-model="selectedStockStore"
+                        class="rounded-lg border border-default bg-elevated/40 px-3 py-1.5 text-xs font-semibold outline-none focus:border-primary"
+                        @change="changeStockStoreFilter"
+                    >
+                        <option value="">Semua Toko / Cabang</option>
+                        <option v-for="st in options.stores" :key="st.value" :value="st.value">
+                            {{ st.label }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tab Status Filters -->
+            <div class="flex flex-wrap gap-2 pt-1">
+                <button
+                    type="button"
+                    :class="[
+                        'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border',
+                        activeStockTab === 'all'
+                            ? 'bg-primary text-inverted border-primary'
+                            : 'bg-elevated/40 text-muted border-default hover:text-highlighted'
+                    ]"
+                    @click="activeStockTab = 'all'"
+                >
+                    Semua Peringatan ({{ stockSummary.total_alert_count }})
+                </button>
+                <button
+                    type="button"
+                    :class="[
+                        'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border flex items-center gap-1.5',
+                        activeStockTab === 'out_of_stock'
+                            ? 'bg-rose-600 text-white border-rose-600'
+                            : 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
+                    ]"
+                    @click="activeStockTab = 'out_of_stock'"
+                >
+                    <span class="size-2 rounded-full bg-rose-500 animate-pulse" />
+                    Stok Habis ({{ stockSummary.out_of_stock_count }})
+                </button>
+                <button
+                    type="button"
+                    :class="[
+                        'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border flex items-center gap-1.5',
+                        activeStockTab === 'below_min'
+                            ? 'bg-amber-600 text-white border-amber-600'
+                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                    ]"
+                    @click="activeStockTab = 'below_min'"
+                >
+                    <span class="size-2 rounded-full bg-amber-500" />
+                    Di Bawah Minimal ({{ stockSummary.below_min_count }})
+                </button>
+                <button
+                    type="button"
+                    :class="[
+                        'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border flex items-center gap-1.5',
+                        activeStockTab === 'approaching_min'
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
+                    ]"
+                    @click="activeStockTab = 'approaching_min'"
+                >
+                    <span class="size-2 rounded-full bg-blue-500" />
+                    Mendekati Minimal ({{ stockSummary.approaching_min_count }})
+                </button>
+            </div>
+
+            <!-- Table Data -->
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-default bg-elevated/50 text-muted">
+                            <th class="p-3 font-semibold">Produk / Varian</th>
+                            <th class="p-3 font-semibold">SKU / Barcode</th>
+                            <th class="p-3 font-semibold">Toko / Gudang</th>
+                            <th class="p-3 font-semibold text-center">Stok Saat Ini</th>
+                            <th class="p-3 font-semibold text-center">Stok Minimal</th>
+                            <th class="p-3 font-semibold text-center">Status Alert</th>
+                            <th class="p-3 font-semibold text-center w-28">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-default">
+                        <tr v-for="item in filteredStockAlerts" :key="item.id" class="hover:bg-elevated/20 transition-colors">
+                            <td class="p-3 font-medium text-highlighted">
+                                {{ item.variant_display_name }}
+                            </td>
+                            <td class="p-3 text-muted font-mono text-[11px]">
+                                <div>{{ item.sku !== '-' ? item.sku : '' }}</div>
+                                <div v-if="item.barcode && item.barcode !== '-'" class="text-muted/70">{{ item.barcode }}</div>
+                            </td>
+                            <td class="p-3 text-muted">
+                                <span class="font-medium text-highlighted">{{ item.store_name }}</span>
+                                <span class="block text-[11px] text-muted">{{ item.warehouse_name }}</span>
+                            </td>
+                            <td class="p-3 text-center font-mono font-bold text-sm">
+                                <span :class="[
+                                    item.quantity <= 0 ? 'text-rose-400 font-extrabold' : item.alert_status === 'below_min' ? 'text-amber-400' : 'text-blue-400'
+                                ]">
+                                    {{ item.quantity }}
+                                </span>
+                            </td>
+                            <td class="p-3 text-center font-mono text-muted">
+                                {{ item.minimum_stock }}
+                            </td>
+                            <td class="p-3 text-center whitespace-nowrap">
+                                <span v-if="item.alert_status === 'out_of_stock'" class="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-rose-400 border border-rose-500/20">
+                                    <UIcon name="i-lucide-x-circle" class="size-3" /> Stok Habis
+                                </span>
+                                <span v-else-if="item.alert_status === 'below_min'" class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-400 border border-amber-500/20">
+                                    <UIcon name="i-lucide-alert-circle" class="size-3" /> Di Bawah Min
+                                </span>
+                                <span v-else class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-blue-400 border border-blue-500/20">
+                                    <UIcon name="i-lucide-info" class="size-3" /> Mendekati Min
+                                </span>
+                            </td>
+                            <td class="p-3 text-center whitespace-nowrap">
+                                <Link
+                                    href="/purchases/create"
+                                    class="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                                >
+                                    <UIcon name="i-lucide-plus" class="size-3" /> Restok
+                                </Link>
+                            </td>
+                        </tr>
+                        <tr v-if="filteredStockAlerts.length === 0">
+                            <td colspan="7" class="p-8 text-center text-muted">
+                                <UIcon name="i-lucide-check-circle-2" class="mx-auto size-10 text-emerald-400/60" />
+                                <p class="mt-2 text-sm font-medium text-highlighted">Semua stok barang dalam kondisi aman.</p>
+                                <p class="text-xs text-muted">Tidak ada produk yang perlu restok saat ini.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
