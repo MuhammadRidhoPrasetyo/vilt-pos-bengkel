@@ -383,3 +383,44 @@ test('transaction show page includes payment attempts and item batches props', f
             ->where('transaction.data.outstanding_amount', 15000)
         );
 });
+
+test('staff with assigned store is locked to assigned store on cashier page and payload', function () {
+    $storeA = Store::create(['name' => 'Store A', 'code' => 'STA']);
+    $storeB = Store::create(['name' => 'Store B', 'code' => 'STB']);
+
+    $staff = User::factory()->create(['store_id' => $storeA->id]);
+
+    $category = ProductCategory::create(['name' => 'Service', 'pricing_mode' => 'fixed']);
+    $product = Product::create(['product_category_id' => $category->id, 'name' => 'Jasa Servis', 'item_type' => 'labor']);
+    $variant = ProductVariant::create(['product_id' => $product->id, 'default_selling_price' => 50000, 'is_active' => true]);
+
+    // 1. Staff accessing POS page receives locked store props
+    $this->actingAs($staff)
+        ->get(route('transactions.create'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('activeStoreId', $storeA->id)
+            ->where('isStoreLocked', true)
+        );
+
+    // 2. Staff attempting to submit payload with storeB will have store_id sanitized to storeA
+    $this->actingAs($staff)
+        ->post(route('transactions.store'), [
+            'store_id' => $storeB->id,
+            'type' => 'retail',
+            'paid_amount' => 50000,
+            'items' => [
+                [
+                    'item_type' => 'labor',
+                    'product_variant_id' => $variant->id,
+                    'description' => 'Jasa Servis',
+                    'quantity' => 1,
+                    'unit_price' => 50000,
+                ],
+            ],
+        ])
+        ->assertRedirect();
+
+    $transaction = Transaction::first();
+    expect($transaction->store_id)->toBe($storeA->id);
+});

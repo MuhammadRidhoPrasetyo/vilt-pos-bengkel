@@ -90,7 +90,7 @@ const handleCancel = () => {
 
                     <label class="grid gap-1 text-sm">
                         <span class="font-medium">SKU</span>
-                        <input v-model="form.sku" class="rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary" type="text" placeholder="SKU Unik (opsional)" />
+                        <input v-model="form.sku" class="rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary" type="text" placeholder="Otomatis jika dikosongkan (mis. OLI-FM10-001)" />
                         <span v-if="form.errors.sku" class="text-xs text-red-600">{{ form.errors.sku }}</span>
                     </label>
 

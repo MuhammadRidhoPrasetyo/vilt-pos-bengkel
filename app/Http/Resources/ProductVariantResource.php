@@ -75,6 +75,7 @@ class ProductVariantResource extends JsonResource
             'stocks' => $this->whenLoaded('stocks', fn () => $this->stocks->map(fn ($stock) => [
                 'id' => $stock->id,
                 'product_variant_id' => $stock->product_variant_id,
+                'store_id' => $stock->warehouse?->store_id,
                 'warehouse_id' => $stock->warehouse_id,
                 'warehouse_name' => $stock->warehouse?->name ?? '-',
                 'warehouse_location_id' => $stock->warehouse_location_id,

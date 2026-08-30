@@ -12,6 +12,18 @@ class StoreTransactionRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        $canFilterStore = $user && ($user->hasRole('owner') || $user->hasRole('super-admin') || $user->store_id === null);
+
+        if (! $canFilterStore && $user?->store_id) {
+            $this->merge([
+                'store_id' => $user->store_id,
+            ]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

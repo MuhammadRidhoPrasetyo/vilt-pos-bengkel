@@ -8,6 +8,8 @@ defineOptions({
 });
 
 const props = defineProps({
+    activeStoreId: String,
+    isStoreLocked: Boolean,
     options: Object,
     readyServiceOrders: Object,
     variants: Array,
@@ -19,7 +21,7 @@ const currentUser = computed(() => page.props.auth?.user || {});
 const isOwner = computed(() => !currentUser.value.store_id || currentUser.value.roles?.includes('owner'));
 
 const form = useForm({
-    store_id: currentUser.value.store_id || props.options?.stores?.[0]?.value || '',
+    store_id: props.activeStoreId || currentUser.value.store_id || props.options?.stores?.[0]?.value || '',
     customer_id: null,
     payment_id: props.options?.payments?.[0]?.value || null,
     type: 'retail', // 'retail' | 'service'
@@ -61,9 +63,41 @@ const readyOrdersList = computed(() => {
     return [];
 });
 
+const storesList = computed(() => props.options?.stores || []);
 const customersList = computed(() => props.options?.customers || []);
 const paymentOptions = computed(() => props.options?.payments || []);
 const discountTypesList = computed(() => props.options?.discountTypes || []);
+
+const currentStoreLabel = computed(() => {
+    const found = storesList.value.find((s) => String(s.value) === String(form.store_id || props.activeStoreId));
+    return found ? found.label : 'Toko Utama';
+});
+
+const handleStoreChange = (newStoreId) => {
+    if (!newStoreId || String(newStoreId) === String(form.store_id)) return;
+
+    if (form.items.length > 0) {
+        if (!confirm('Mengubah toko akan mengosongkan item keranjang transaksi saat ini. Lanjutkan?')) {
+            return;
+        }
+        form.items = [];
+        form.service_order_id = null;
+        form.type = 'retail';
+        selectedServiceOrder.value = null;
+    }
+
+    form.store_id = newStoreId;
+
+    router.get(
+        route('transactions.create'),
+        { store_id: newStoreId },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['readyServiceOrders', 'activeStoreId'],
+        }
+    );
+};
 
 const onDiscountTypeChange = (item) => {
     if (!item.discount_type_id) {
@@ -136,8 +170,9 @@ const filteredServiceOrders = computed(() => {
 
 const getItemStock = (variant) => {
     if (!variant.stocks || !variant.stocks.length) return 0;
-    const currentStoreStock = variant.stocks.find(s => String(s.store_id) === String(form.store_id));
-    return currentStoreStock ? (currentStoreStock.quantity || 0) : 0;
+    const storeStocks = variant.stocks.filter(s => String(s.store_id) === String(form.store_id));
+    if (storeStocks.length === 0) return 0;
+    return storeStocks.reduce((sum, s) => sum + Number(s.quantity || 0), 0);
 };
 
 const getVariantImage = (variant) => {
@@ -322,6 +357,22 @@ onMounted(() => {
                             class="w-full rounded-lg border border-default bg-default py-1.5 pl-9 pr-3 text-xs outline-none focus:border-primary"
                         />
                     </div>
+
+                    <!-- Store Selection: Locked Badge for Staff, Switcher Dropdown for Owner/Admin -->
+                    <div v-if="props.isStoreLocked" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-default bg-elevated/70 text-xs font-semibold text-muted shrink-0 select-none" title="Cabang Terkunci">
+                        <UIcon name="i-lucide-store" class="size-3.5 text-primary" />
+                        <span>{{ currentStoreLabel }}</span>
+                        <UIcon name="i-lucide-lock" class="size-3 text-muted/60" />
+                    </div>
+
+                    <select
+                        v-else-if="storesList.length > 0"
+                        :value="form.store_id"
+                        @change="handleStoreChange($event.target.value)"
+                        class="rounded-lg border border-default bg-default px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-primary shrink-0"
+                    >
+                        <option v-for="st in storesList" :key="st.value" :value="st.value">{{ st.label }}</option>
+                    </select>
 
                     <select
                         v-model="categoryFilter"

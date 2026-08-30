@@ -31,6 +31,62 @@ class ProductVariant extends BaseModel implements HasMedia
             ->nonQueued();
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (ProductVariant $variant) {
+            if (empty($variant->sku)) {
+                $variant->sku = static::generateUniqueSku($variant);
+            }
+        });
+    }
+
+    public static function generateUniqueSku(ProductVariant $variant): string
+    {
+        $product = $variant->product;
+        if (! $product && $variant->product_id) {
+            $product = Product::with('category')->find($variant->product_id);
+        }
+
+        $categoryName = $product?->category?->name;
+        $itemType = $product?->item_type ?? 'part';
+
+        if ($itemType === 'labor') {
+            $catCode = 'JSA';
+        } elseif (! empty($categoryName)) {
+            $cleanCat = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $categoryName));
+            $catCode = substr($cleanCat, 0, 3) ?: 'PRT';
+        } else {
+            $catCode = 'PRT';
+        }
+
+        $productName = $product?->name ?? 'VAR';
+        $words = explode(' ', trim($productName));
+        if (count($words) >= 2) {
+            $prodCode = '';
+            foreach ($words as $w) {
+                $cleanW = preg_replace('/[^A-Za-z0-9]/', '', $w);
+                if (! empty($cleanW)) {
+                    $prodCode .= strtoupper($cleanW[0]);
+                }
+            }
+            $prodCode = substr($prodCode, 0, 4);
+        } else {
+            $cleanProd = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $productName));
+            $prodCode = substr($cleanProd, 0, 4) ?: 'ITEM';
+        }
+
+        $basePrefix = "{$catCode}-{$prodCode}";
+
+        $counter = 1;
+        do {
+            $candidateSku = sprintf('%s-%03d', $basePrefix, $counter);
+            $exists = static::where('sku', $candidateSku)->exists();
+            $counter++;
+        } while ($exists);
+
+        return $candidateSku;
+    }
+
     protected function casts(): array
     {
         return [

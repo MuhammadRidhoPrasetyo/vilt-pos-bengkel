@@ -67,7 +67,13 @@ class TransactionController extends Controller
 
     public function create(Request $request): Response
     {
-        $storeId = $request->string('store_id')->toString() ?: $request->user()?->store_id;
+        $user = $request->user();
+        $canFilterStore = $user && ($user->hasRole('owner') || $user->hasRole('super-admin') || $user->store_id === null);
+
+        $storeOptions = $this->stores->options();
+        $storeId = ! $canFilterStore
+            ? $user?->store_id
+            : ($request->string('store_id')->toString() ?: ($user?->store_id ?: $storeOptions->first()?->id));
 
         $payments = Payment::query()
             ->orderBy('name')
@@ -94,13 +100,15 @@ class TransactionController extends Controller
             ->get();
 
         $variants = ProductVariant::query()
-            ->with(['product.category', 'product.brand', 'product.unit', 'media', 'product.media', 'stocks', 'discounts.discountType'])
+            ->with(['product.category', 'product.brand', 'product.unit', 'media', 'product.media', 'stocks.warehouse', 'discounts.discountType'])
             ->latest()
             ->get();
 
         return Inertia::render('transactions/create', [
+            'activeStoreId' => $storeId,
+            'isStoreLocked' => ! $canFilterStore,
             'options' => [
-                'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
+                'stores' => $storeOptions->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
                 'payments' => $payments,
                 'customers' => $customers,
                 'discountTypes' => $discountTypes,
