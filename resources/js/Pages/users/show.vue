@@ -23,7 +23,7 @@ defineProps({
                     <UIcon name="i-lucide-arrow-left" class="size-4" />
                     Kembali
                 </Link>
-                <Link :href="`/users/${user.data.id}/edit`" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
+                <Link v-if="$can('users.edit')" :href="`/users/${user.data.id}/edit`" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
                     <UIcon name="i-lucide-pencil" class="size-4" />
                     Edit
                 </Link>

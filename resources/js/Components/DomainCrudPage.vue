@@ -4,6 +4,7 @@ import MultiImageUploader from './MultiImageUploader.vue';
 import PaginationLinks from './PaginationLinks.vue';
 import { router, useForm } from '@inertiajs/vue3';
 import { computed, h, ref, resolveComponent, watch } from 'vue';
+import { usePermission } from '../composables/usePermission';
 
 const props = defineProps({
     records: Object,
@@ -14,6 +15,9 @@ const props = defineProps({
         default: () => ({}),
     },
 });
+
+const { can } = usePermission();
+const permissionPrefix = computed(() => props.config?.permissionPrefix || props.config?.route?.replace(/^\//, '') || '');
 
 const search = ref(props.filters?.search || '');
 const rowSelection = ref({});
@@ -344,7 +348,13 @@ watch(fields, () => {
                     <UButton color="neutral" variant="outline" icon="i-lucide-sliders-horizontal" label="Display" class="w-full justify-center sm:w-auto" />
                 </UDropdownMenu>
 
-                <UButton icon="i-lucide-plus" :label="`Tambah ${config.singular}`" class="w-full justify-center sm:w-auto" @click="openCreate" />
+                <UButton
+                    v-if="can(`${permissionPrefix}.create`)"
+                    icon="i-lucide-plus"
+                    :label="`Tambah ${config.singular}`"
+                    class="w-full justify-center sm:w-auto"
+                    @click="openCreate"
+                />
             </template>
         </UDashboardToolbar>
 
@@ -369,13 +379,31 @@ watch(fields, () => {
                 >
                     <template #actions-cell="{ row }">
                         <div class="flex justify-end gap-2">
-                            <button class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" type="button" title="Detail" @click="openShow(row.original)">
+                            <button
+                                v-if="can(`${permissionPrefix}.view`)"
+                                class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted"
+                                type="button"
+                                title="Detail"
+                                @click="openShow(row.original)"
+                            >
                                 <UIcon name="i-lucide-eye" class="size-4" />
                             </button>
-                            <button class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" type="button" title="Edit" @click="openEdit(row.original)">
+                            <button
+                                v-if="can(`${permissionPrefix}.edit`)"
+                                class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted"
+                                type="button"
+                                title="Edit"
+                                @click="openEdit(row.original)"
+                            >
                                 <UIcon name="i-lucide-pencil" class="size-4" />
                             </button>
-                            <button class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10" type="button" title="Hapus" @click="destroyRecord(row.original)">
+                            <button
+                                v-if="can(`${permissionPrefix}.delete`)"
+                                class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10"
+                                type="button"
+                                title="Hapus"
+                                @click="destroyRecord(row.original)"
+                            >
                                 <UIcon name="i-lucide-trash-2" class="size-4" />
                             </button>
                         </div>

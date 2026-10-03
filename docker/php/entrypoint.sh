@@ -22,6 +22,9 @@ if [ ! -L /var/www/html/public/storage ]; then
     php /var/www/html/artisan storage:link 2>/dev/null || true
 fi
 
+# Remove public/hot if present to ensure external clients load compiled assets
+rm -f /var/www/html/public/hot 2>/dev/null || true
+
 # If first arg is `-f` or starts with `--`
 if [ "${1#-}" != "$1" ]; then
     set -- php-fpm "$@"

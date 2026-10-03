@@ -3,10 +3,13 @@ import DeleteConfirmationModal from '../../Components/DeleteConfirmationModal.vu
 import DashboardLayout from '../../Layouts/DashboardLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import { usePermission } from '../../composables/usePermission';
 
 defineOptions({
     layout: [DashboardLayout, { title: 'Stock Adjustment', panelId: 'stock-adjustments' }],
 });
+
+const { can } = usePermission();
 
 const props = defineProps({
     records: Object,
@@ -65,7 +68,11 @@ watch([search, status, storeId], applyFilters);
                 <h1 class="text-2xl font-bold text-highlighted">Stock Adjustment</h1>
                 <p class="text-sm text-muted">Dokumen koreksi stok dengan workflow draft, posted, dan cancelled.</p>
             </div>
-            <Link href="/stock-adjustments/create" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
+            <Link
+                v-if="can('stock-adjustments.create')"
+                href="/stock-adjustments/create"
+                class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90"
+            >
                 <UIcon name="i-lucide-plus" class="size-4" />
                 Buat Adjustment
             </Link>
@@ -108,11 +115,49 @@ watch([search, status, storeId], applyFilters);
                         <td class="px-4 py-3 text-sm text-muted">{{ record.items_count || record.items?.length || 0 }}</td>
                         <td class="px-4 py-3">
                             <div class="flex justify-end gap-2">
-                                <Link :href="`/stock-adjustments/${record.id}`" class="rounded-md border border-default p-2 hover:bg-elevated"><UIcon name="i-lucide-eye" class="size-4" /></Link>
-                                <Link v-if="record.status === 'draft'" :href="`/stock-adjustments/${record.id}/edit`" class="rounded-md border border-default p-2 hover:bg-elevated"><UIcon name="i-lucide-pencil" class="size-4" /></Link>
-                                <button v-if="record.status === 'draft'" type="button" class="rounded-md border border-emerald-500/20 p-2 text-emerald-600 hover:bg-emerald-500/10" @click="postRecord(record)"><UIcon name="i-lucide-send" class="size-4" /></button>
-                                <button v-if="record.status === 'draft'" type="button" class="rounded-md border border-zinc-500/20 p-2 text-zinc-600 hover:bg-zinc-500/10" @click="cancelRecord(record)"><UIcon name="i-lucide-ban" class="size-4" /></button>
-                                <button v-if="record.status === 'draft'" type="button" class="rounded-md border border-red-500/20 p-2 text-red-600 hover:bg-red-500/10" @click="askDelete(record)"><UIcon name="i-lucide-trash-2" class="size-4" /></button>
+                                <Link
+                                    v-if="can('stock-adjustments.view')"
+                                    :href="`/stock-adjustments/${record.id}`"
+                                    class="rounded-md border border-default p-2 hover:bg-elevated"
+                                    title="Detail"
+                                >
+                                    <UIcon name="i-lucide-eye" class="size-4" />
+                                </Link>
+                                <Link
+                                    v-if="record.status === 'draft' && can('stock-adjustments.edit')"
+                                    :href="`/stock-adjustments/${record.id}/edit`"
+                                    class="rounded-md border border-default p-2 hover:bg-elevated"
+                                    title="Edit"
+                                >
+                                    <UIcon name="i-lucide-pencil" class="size-4" />
+                                </Link>
+                                <button
+                                    v-if="record.status === 'draft' && can('stock-adjustments.post')"
+                                    type="button"
+                                    class="rounded-md border border-emerald-500/20 p-2 text-emerald-600 hover:bg-emerald-500/10"
+                                    title="Post"
+                                    @click="postRecord(record)"
+                                >
+                                    <UIcon name="i-lucide-send" class="size-4" />
+                                </button>
+                                <button
+                                    v-if="record.status === 'draft' && can('stock-adjustments.cancel')"
+                                    type="button"
+                                    class="rounded-md border border-zinc-500/20 p-2 text-zinc-600 hover:bg-zinc-500/10"
+                                    title="Cancel"
+                                    @click="cancelRecord(record)"
+                                >
+                                    <UIcon name="i-lucide-ban" class="size-4" />
+                                </button>
+                                <button
+                                    v-if="record.status === 'draft' && can('stock-adjustments.delete')"
+                                    type="button"
+                                    class="rounded-md border border-red-500/20 p-2 text-red-600 hover:bg-red-500/10"
+                                    title="Hapus"
+                                    @click="askDelete(record)"
+                                >
+                                    <UIcon name="i-lucide-trash-2" class="size-4" />
+                                </button>
                             </div>
                         </td>
                     </tr>

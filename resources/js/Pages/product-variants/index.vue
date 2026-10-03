@@ -19,7 +19,7 @@ defineProps({
                 <h2 class="text-xl font-semibold">Product Variants</h2>
                 <p class="text-sm text-muted">Kelola variant produk dan kombinasi attribute.</p>
             </div>
-            <Link href="/product-variants/create" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
+            <Link v-if="$can('product-variants.create')" href="/product-variants/create" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90">
                 <UIcon name="i-lucide-plus" class="size-4" />
                 Tambah Product Variant
             </Link>
@@ -51,10 +51,10 @@ defineProps({
                             <td class="px-4 py-3 text-sm">{{ variant.is_active ? 'Aktif' : 'Nonaktif' }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex justify-end gap-2">
-                                    <Link :href="`/product-variants/${variant.id}`" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted">
+                                    <Link v-if="$can('product-variants.view')" :href="`/product-variants/${variant.id}`" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted">
                                         <UIcon name="i-lucide-eye" class="size-4" />
                                     </Link>
-                                    <Link :href="`/product-variants/${variant.id}/edit`" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted">
+                                    <Link v-if="$can('product-variants.edit')" :href="`/product-variants/${variant.id}/edit`" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted">
                                         <UIcon name="i-lucide-pencil" class="size-4" />
                                     </Link>
                                 </div>

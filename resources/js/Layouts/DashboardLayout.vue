@@ -3,6 +3,7 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import { useAppConfig } from '#imports';
 import { useToast } from '@nuxt/ui/composables';
 import { computed, ref, watch } from 'vue';
+import { usePermission } from '../composables/usePermission';
 
 defineProps({
     title: {
@@ -63,22 +64,36 @@ const setAppearance = (value) => {
     applyTheme();
 };
 
-const teams = ref([
-    {
-        label: 'POS Bengkel',
-        avatar: {
-            icon: 'i-lucide-badge-dollar-sign',
-        },
-    },
-    {
-        label: 'Manajemen Akses',
-        avatar: {
-            icon: 'i-lucide-shield-check',
-        },
-    },
-]);
+const { can, canAny } = usePermission();
 
-const selectedTeam = ref(teams.value[0]);
+const teams = computed(() => {
+    const list = [
+        {
+            label: 'POS Bengkel',
+            avatar: {
+                icon: 'i-lucide-badge-dollar-sign',
+            },
+        },
+    ];
+
+    if (canAny(['roles.view', 'permissions.view', 'users.view'])) {
+        list.push({
+            label: 'Manajemen Akses',
+            avatar: {
+                icon: 'i-lucide-shield-check',
+            },
+        });
+    }
+
+    return list;
+});
+
+const selectedTeam = ref({
+    label: 'POS Bengkel',
+    avatar: {
+        icon: 'i-lucide-badge-dollar-sign',
+    },
+});
 
 const teamItems = computed(() => [
     teams.value.map((team) => ({
@@ -196,27 +211,67 @@ const navigateTo = (path) => {
     router.visit(path);
 };
 
-const links = computed(() => [
-    [
-        {
+const links = computed(() => {
+    const navItems = [];
+
+    // 1. Beranda
+    if (canAny(['dashboard.view', 'pos.view', 'services.view'])) {
+        navItems.push({
             label: 'Beranda',
             icon: 'i-lucide-house',
             active: currentPath.value === '/dashboard',
             onSelect: () => navigateTo('/dashboard'),
-        },
-        {
+        });
+    }
+
+    // 2. POS Penjualan
+    if (canAny(['pos.view', 'transactions.view'])) {
+        navItems.push({
             label: 'POS Penjualan',
             icon: 'i-lucide-shopping-cart',
             active: currentPath.value.startsWith('/transactions'),
             onSelect: () => navigateTo('/transactions'),
-        },
-        {
+        });
+    }
+
+    // 3. Servis / SPK
+    if (canAny(['services.view', 'work-orders.view'])) {
+        navItems.push({
             label: 'Servis / SPK',
             icon: 'i-lucide-wrench',
             active: currentPath.value.startsWith('/services'),
             onSelect: () => navigateTo('/services'),
-        },
-        {
+        });
+    }
+
+    // 4. Katalog & Stok
+    const catalogChildren = [];
+    if (can('products.view')) {
+        catalogChildren.push({
+            label: 'Semua Produk',
+            onSelect: () => navigateTo('/products'),
+        });
+    }
+    if (can('product-categories.view')) {
+        catalogChildren.push({
+            label: 'Kategori Produk',
+            onSelect: () => navigateTo('/product-categories'),
+        });
+    }
+    if (can('product-stocks.view')) {
+        catalogChildren.push({
+            label: 'Stok Barang',
+            onSelect: () => navigateTo('/product-stocks'),
+        });
+    }
+    if (can('purchases.view')) {
+        catalogChildren.push({
+            label: 'Pembelian / Restok',
+            onSelect: () => navigateTo('/purchases'),
+        });
+    }
+    if (catalogChildren.length > 0) {
+        navItems.push({
             label: 'Katalog & Stok',
             icon: 'i-lucide-package',
             active: currentPath.value.startsWith('/products')
@@ -228,26 +283,38 @@ const links = computed(() => [
                 || currentPath.value.startsWith('/product-stocks')
                 || currentPath.value.startsWith('/purchases'),
             type: 'trigger',
-            children: [
-                {
-                    label: 'Semua Produk',
-                    onSelect: () => navigateTo('/products'),
-                },
-                {
-                    label: 'Kategori Produk',
-                    onSelect: () => navigateTo('/product-categories'),
-                },
-                {
-                    label: 'Stok Barang',
-                    onSelect: () => navigateTo('/product-stocks'),
-                },
-                {
-                    label: 'Pembelian / Restok',
-                    onSelect: () => navigateTo('/purchases'),
-                },
-            ],
-        },
-        {
+            children: catalogChildren,
+        });
+    }
+
+    // 5. Gudang & Logistik
+    const warehouseChildren = [];
+    if (can('warehouses.view')) {
+        warehouseChildren.push({
+            label: 'Daftar Warehouse',
+            onSelect: () => navigateTo('/warehouses'),
+        });
+    }
+    if (can('warehouse-locations.view')) {
+        warehouseChildren.push({
+            label: 'Lokasi / Rak Warehouse',
+            onSelect: () => navigateTo('/warehouse-locations'),
+        });
+    }
+    if (can('stock-adjustments.view')) {
+        warehouseChildren.push({
+            label: 'Stock Adjustment',
+            onSelect: () => navigateTo('/stock-adjustments'),
+        });
+    }
+    if (can('stock-transfers.view')) {
+        warehouseChildren.push({
+            label: 'Stock Transfer',
+            onSelect: () => navigateTo('/stock-transfers'),
+        });
+    }
+    if (warehouseChildren.length > 0) {
+        navItems.push({
             label: 'Gudang & Logistik',
             icon: 'i-lucide-warehouse',
             active: currentPath.value.startsWith('/warehouses')
@@ -259,26 +326,32 @@ const links = computed(() => [
                 || currentPath.value.startsWith('/stock-adjustments')
                 || currentPath.value.startsWith('/stock-transfers'),
             type: 'trigger',
-            children: [
-                {
-                    label: 'Daftar Warehouse',
-                    onSelect: () => navigateTo('/warehouses'),
-                },
-                {
-                    label: 'Lokasi / Rak Warehouse',
-                    onSelect: () => navigateTo('/warehouse-locations'),
-                },
-                {
-                    label: 'Stock Adjustment',
-                    onSelect: () => navigateTo('/stock-adjustments'),
-                },
-                {
-                    label: 'Stock Transfer',
-                    onSelect: () => navigateTo('/stock-transfers'),
-                },
-            ],
-        },
-        {
+            children: warehouseChildren,
+        });
+    }
+
+    // 6. Keuangan & Kas
+    const financeChildren = [];
+    if (can('cash-flows.view')) {
+        financeChildren.push({
+            label: 'Arus Kas (Cash Flow)',
+            onSelect: () => navigateTo('/cash-flows'),
+        });
+    }
+    if (can('cash-flow-categories.view')) {
+        financeChildren.push({
+            label: 'Kategori Arus Kas',
+            onSelect: () => navigateTo('/cash-flow-categories'),
+        });
+    }
+    if (can('payments.view')) {
+        financeChildren.push({
+            label: 'Metode Pembayaran',
+            onSelect: () => navigateTo('/payments'),
+        });
+    }
+    if (financeChildren.length > 0) {
+        navItems.push({
             label: 'Keuangan & Kas',
             icon: 'i-lucide-wallet',
             active: currentPath.value.startsWith('/cash-flows')
@@ -288,22 +361,26 @@ const links = computed(() => [
                 || currentPath.value.startsWith('/cash-flow-categories')
                 || currentPath.value.startsWith('/payments'),
             type: 'trigger',
-            children: [
-                {
-                    label: 'Arus Kas (Cash Flow)',
-                    onSelect: () => navigateTo('/cash-flows'),
-                },
-                {
-                    label: 'Kategori Arus Kas',
-                    onSelect: () => navigateTo('/cash-flow-categories'),
-                },
-                {
-                    label: 'Metode Pembayaran',
-                    onSelect: () => navigateTo('/payments'),
-                },
-            ],
-        },
-        {
+            children: financeChildren,
+        });
+    }
+
+    // 7. Mitra & Kontak
+    const partnerChildren = [];
+    if (can('partners.view')) {
+        partnerChildren.push({
+            label: 'Mitra / Pelanggan / Supplier',
+            onSelect: () => navigateTo('/partners'),
+        });
+    }
+    if (can('partner-roles.view')) {
+        partnerChildren.push({
+            label: 'Role Partner',
+            onSelect: () => navigateTo('/partner-roles'),
+        });
+    }
+    if (partnerChildren.length > 0) {
+        navItems.push({
             label: 'Mitra & Kontak',
             icon: 'i-lucide-users',
             active: currentPath.value.startsWith('/partners')
@@ -311,18 +388,68 @@ const links = computed(() => [
             defaultOpen: currentPath.value.startsWith('/partners')
                 || currentPath.value.startsWith('/partner-roles'),
             type: 'trigger',
-            children: [
-                {
-                    label: 'Mitra / Pelanggan / Supplier',
-                    onSelect: () => navigateTo('/partners'),
-                },
-                {
-                    label: 'Role Partner',
-                    onSelect: () => navigateTo('/partner-roles'),
-                },
-            ],
-        },
-        {
+            children: partnerChildren,
+        });
+    }
+
+    // 8. Pengaturan & System
+    const settingChildren = [];
+    if (can('stores.view')) {
+        settingChildren.push({
+            label: 'Cabang Toko',
+            onSelect: () => navigateTo('/stores'),
+        });
+    }
+    if (can('brands.view')) {
+        settingChildren.push({
+            label: 'Merek / Brand',
+            onSelect: () => navigateTo('/brands'),
+        });
+    }
+    if (can('units.view')) {
+        settingChildren.push({
+            label: 'Satuan Barang',
+            onSelect: () => navigateTo('/units'),
+        });
+    }
+    if (can('discount-types.view')) {
+        settingChildren.push({
+            label: 'Jenis Diskon',
+            onSelect: () => navigateTo('/discount-types'),
+        });
+    }
+    if (can('users.view')) {
+        settingChildren.push({
+            label: 'Pengguna Sistem',
+            onSelect: () => navigateTo('/users'),
+        });
+    }
+    if (can('roles.view')) {
+        settingChildren.push({
+            label: 'Peran / Role',
+            onSelect: () => navigateTo('/roles'),
+        });
+    }
+    if (can('permissions.view')) {
+        settingChildren.push({
+            label: 'Hak Akses / Permission',
+            onSelect: () => navigateTo('/permissions'),
+        });
+    }
+    if (can('printers.view')) {
+        settingChildren.push({
+            label: 'Printer Toko',
+            onSelect: () => navigateTo('/printers'),
+        });
+    }
+    if (can('database-backup.view')) {
+        settingChildren.push({
+            label: 'Backup / Restore Database',
+            onSelect: () => navigateTo('/settings/database'),
+        });
+    }
+    if (settingChildren.length > 0) {
+        navItems.push({
             label: 'Pengaturan & System',
             icon: 'i-lucide-settings',
             active: currentPath.value.startsWith('/stores')
@@ -344,47 +471,12 @@ const links = computed(() => [
                 || currentPath.value.startsWith('/printers')
                 || currentPath.value.startsWith('/settings/database'),
             type: 'trigger',
-            children: [
-                {
-                    label: 'Cabang Toko',
-                    onSelect: () => navigateTo('/stores'),
-                },
-                {
-                    label: 'Merek / Brand',
-                    onSelect: () => navigateTo('/brands'),
-                },
-                {
-                    label: 'Satuan Barang',
-                    onSelect: () => navigateTo('/units'),
-                },
-                {
-                    label: 'Jenis Diskon',
-                    onSelect: () => navigateTo('/discount-types'),
-                },
-                {
-                    label: 'Pengguna Sistem',
-                    onSelect: () => navigateTo('/users'),
-                },
-                {
-                    label: 'Peran / Role',
-                    onSelect: () => navigateTo('/roles'),
-                },
-                {
-                    label: 'Hak Akses / Permission',
-                    onSelect: () => navigateTo('/permissions'),
-                },
-                {
-                    label: 'Printer Toko',
-                    onSelect: () => navigateTo('/printers'),
-                },
-                {
-                    label: 'Backup / Restore Database',
-                    onSelect: () => navigateTo('/settings/database'),
-                },
-            ],
-        },
-    ],
-]);
+            children: settingChildren,
+        });
+    }
+
+    return [navItems];
+});
 
 const searchGroups = computed(() => [
     {

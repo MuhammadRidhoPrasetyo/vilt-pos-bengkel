@@ -28,6 +28,31 @@ createInertiaApp({
             },
         });
 
+        vueApp.config.globalProperties.$can = function (permission) {
+            const user = this.$page?.props?.auth?.user;
+            if (!user) return false;
+            const roles = user.roles || [];
+            if (roles.includes('owner') || roles.includes('admin') || roles.includes('super-admin')) {
+                return true;
+            }
+            const perms = user.permissions || [];
+            if (Array.isArray(permission)) {
+                return permission.some((p) => perms.includes(p));
+            }
+            return perms.includes(permission);
+        };
+
+        vueApp.config.globalProperties.$canAny = function (perms = []) {
+            const user = this.$page?.props?.auth?.user;
+            if (!user) return false;
+            const roles = user.roles || [];
+            if (roles.includes('owner') || roles.includes('admin') || roles.includes('super-admin')) {
+                return true;
+            }
+            const userPerms = user.permissions || [];
+            return perms.some((p) => userPerms.includes(p));
+        };
+
         vueApp.use(plugin).use(ui).mount(el);
     },
 });

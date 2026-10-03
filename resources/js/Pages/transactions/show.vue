@@ -80,6 +80,7 @@ const submitPayment = () => {
             </button>
 
             <a
+                v-if="$can('transactions.print')"
                 :href="`/transactions/${tx.id}/print`"
                 target="_blank"
                 class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
@@ -246,7 +247,7 @@ const submitPayment = () => {
             </section>
 
             <aside class="space-y-4 xl:col-span-4">
-                <UCard v-if="tx.outstanding_amount > 0" :ui="{ body: 'p-4' }">
+                <UCard v-if="tx.outstanding_amount > 0 && $can('transactions.edit')" :ui="{ body: 'p-4' }">
                     <div class="mb-4 flex items-center justify-between gap-3">
                         <div>
                             <h2 class="text-sm font-bold text-highlighted">Pelunasan Sisa Pembayaran</h2>

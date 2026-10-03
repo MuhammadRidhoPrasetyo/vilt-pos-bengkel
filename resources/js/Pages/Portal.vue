@@ -21,13 +21,13 @@ const isMekanik = computed(() => userRoles.value.includes('mekanik'));
 const canAccessAdmin = computed(() => {
     if (isOwner.value) return true;
     return userPermissions.value.some(p => 
-        p.startsWith('stores.') || p.startsWith('users.') || p.startsWith('roles.') || p.startsWith('permissions.')
+        p === 'dashboard.view' || p.startsWith('stores.') || p.startsWith('users.') || p.startsWith('roles.') || p.startsWith('permissions.')
     );
 });
 
 const canAccessKasir = computed(() => {
     if (isOwner.value || isKasir.value) return true;
-    return userPermissions.value.some(p => p.startsWith('pos.'));
+    return userPermissions.value.some(p => p.startsWith('pos.') || p.startsWith('transactions.'));
 });
 
 const canAccessService = computed(() => {

@@ -635,6 +635,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
 
             <div class="flex items-center gap-2">
                 <button
+                    v-if="$can('product-attributes.create')"
                     type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-md border border-default bg-elevated/50 px-3.5 py-2 text-sm font-medium text-highlighted hover:bg-elevated transition-all"
                     @click="openCreateAttributeModal"
@@ -643,6 +644,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                     Tambah Atribut Produk
                 </button>
                 <button
+                    v-if="$can('products.edit')"
                     type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
                     @click="openEditProductModal"
@@ -738,7 +740,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-semibold uppercase tracking-wider text-muted">Atribut Khusus Produk Ini</span>
-                            <button type="button" class="text-xs text-primary font-medium hover:underline flex items-center gap-1" @click="openCreateAttributeModal">
+                            <button v-if="$can('product-attributes.create')" type="button" class="text-xs text-primary font-medium hover:underline flex items-center gap-1" @click="openCreateAttributeModal">
                                 <UIcon name="i-lucide-plus" class="size-3.5" />
                                 Tambah Atribut Baru
                             </button>
@@ -755,10 +757,10 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1">
-                                    <button type="button" class="p-1 text-muted hover:text-highlighted rounded hover:bg-elevated" title="Edit Atribut" @click="openEditAttributeModal(attr)">
+                                    <button v-if="$can('product-attributes.edit')" type="button" class="p-1 text-muted hover:text-highlighted rounded hover:bg-elevated" title="Edit Atribut" @click="openEditAttributeModal(attr)">
                                         <UIcon name="i-lucide-pencil" class="size-3.5" />
                                     </button>
-                                    <button type="button" class="p-1 text-red-500 hover:text-red-600 rounded hover:bg-red-500/10" title="Hapus Atribut" @click="deleteAttribute(attr)">
+                                    <button v-if="$can('product-attributes.delete')" type="button" class="p-1 text-red-500 hover:text-red-600 rounded hover:bg-red-500/10" title="Hapus Atribut" @click="deleteAttribute(attr)">
                                         <UIcon name="i-lucide-trash-2" class="size-3.5" />
                                     </button>
                                 </div>
@@ -778,7 +780,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
 
                     <div class="flex flex-wrap items-center justify-between border-t border-default/60 pt-4 text-xs text-muted">
                         <span>Dibuat pada: <strong class="text-highlighted font-medium">{{ productData.created_at || '-' }}</strong></span>
-                        <button type="button" class="text-primary font-semibold hover:underline flex items-center gap-1" @click="openEditProductModal">
+                        <button v-if="$can('products.edit')" type="button" class="text-primary font-semibold hover:underline flex items-center gap-1" @click="openEditProductModal">
                             <UIcon name="i-lucide-pencil" class="size-3.5" />
                             Edit Informasi
                         </button>
@@ -795,6 +797,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                     <p class="text-sm text-muted">Seluruh kombinasi varian yang terdaftar pada produk induk ini.</p>
                 </div>
                 <button
+                    v-if="$can('product-variants.create')"
                     type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
                     @click="openCreateVariantModal"
@@ -844,6 +847,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <button
+                                        v-if="$can('product-variants.edit')"
                                         type="button"
                                         class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-default bg-elevated/50 text-muted hover:bg-elevated hover:text-highlighted transition-all"
                                         title="Edit Varian"
@@ -852,6 +856,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                                         <UIcon name="i-lucide-pencil" class="size-4" />
                                     </button>
                                     <button
+                                        v-if="$can('product-variants.delete')"
                                         type="button"
                                         class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
                                         title="Hapus Varian"
@@ -860,6 +865,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                                         <UIcon name="i-lucide-trash-2" class="size-4" />
                                     </button>
                                     <Link
+                                        v-if="$can('product-variants.view')"
                                         :href="`/product-variants/${variant.id}`"
                                         class="inline-flex items-center gap-1.5 rounded-md border border-default bg-elevated px-3 py-1.5 text-xs font-medium text-highlighted hover:bg-primary hover:text-inverted transition-all"
                                     >
@@ -885,6 +891,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                     <p class="text-sm text-muted">Konfigurasi harga jual dan harga beli spesifik per cabang bengkel/toko.</p>
                 </div>
                 <button
+                    v-if="$can('product-prices.create')"
                     type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
                     @click="openCreatePriceModal"
@@ -932,6 +939,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <button
+                                        v-if="$can('product-prices.edit')"
                                         type="button"
                                         class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-default bg-elevated/50 text-muted hover:bg-elevated hover:text-highlighted transition-all"
                                         title="Edit Harga Toko"
@@ -940,6 +948,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                                         <UIcon name="i-lucide-pencil" class="size-4" />
                                     </button>
                                     <button
+                                        v-if="$can('product-prices.delete')"
                                         type="button"
                                         class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
                                         title="Hapus Harga Toko"
@@ -1007,6 +1016,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                     <p class="text-sm text-muted">Monitoring jumlah stok fisik di setiap lokasi gudang penyimpan.</p>
                 </div>
                 <button
+                    v-if="$can('product-stocks.create')"
                     type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
                     @click="openCreateStockModal"
@@ -1042,6 +1052,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <button
+                                        v-if="$can('product-stocks.edit')"
                                         type="button"
                                         class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-default bg-elevated/50 text-muted hover:bg-elevated hover:text-highlighted transition-all"
                                         title="Edit / Adjust Stok"
@@ -1050,6 +1061,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                                         <UIcon name="i-lucide-pencil" class="size-4" />
                                     </button>
                                     <button
+                                        v-if="$can('product-stocks.delete')"
                                         type="button"
                                         class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
                                         title="Hapus Stok Gudang"
@@ -1076,6 +1088,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                     <p class="text-sm text-muted">Daftar aturan diskon yang dikonfigurasikan pada varian produk ini.</p>
                 </div>
                 <button
+                    v-if="$can('product-discounts.create')"
                     type="button"
                     class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
                     @click="openCreateDiscountModal"
@@ -1111,6 +1124,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <button
+                                        v-if="$can('product-discounts.edit')"
                                         type="button"
                                         class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-default bg-elevated/50 text-muted hover:bg-elevated hover:text-highlighted transition-all"
                                         title="Edit Diskon"
@@ -1119,6 +1133,7 @@ const productSelectOptions = computed(() => [{ label: productData.value.name, va
                                         <UIcon name="i-lucide-pencil" class="size-4" />
                                     </button>
                                     <button
+                                        v-if="$can('product-discounts.delete')"
                                         type="button"
                                         class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
                                         title="Hapus Diskon"

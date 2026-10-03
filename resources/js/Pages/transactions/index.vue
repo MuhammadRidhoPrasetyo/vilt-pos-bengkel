@@ -5,10 +5,13 @@ import DashboardLayout from '../../Layouts/DashboardLayout.vue';
 import { CalendarDate } from '@internationalized/date';
 import { router } from '@inertiajs/vue3';
 import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
+import { usePermission } from '../../composables/usePermission';
 
 defineOptions({
     layout: [DashboardLayout, { title: 'Transaksi POS / Penjualan', panelId: 'transactions' }],
 });
+
+const { can, canAny } = usePermission();
 
 const props = defineProps({
     transactions: Object,
@@ -320,6 +323,7 @@ const columns = [
 
             <template #right>
                 <UButton
+                    v-if="canAny(['pos.create', 'transactions.create'])"
                     icon="i-lucide-shopping-cart"
                     label="Buka Kasir POS Baru"
                     class="w-full justify-center sm:w-auto shadow-md"
@@ -378,6 +382,7 @@ const columns = [
                     <template #actions-cell="{ row }">
                         <div class="flex justify-end gap-1.5">
                             <button
+                                v-if="canAny(['pos.view', 'transactions.view'])"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted"
                                 type="button"
                                 title="Lihat Detail Transaksi"
@@ -386,6 +391,7 @@ const columns = [
                                 <UIcon name="i-lucide-eye" class="size-4" />
                             </button>
                             <a
+                                v-if="canAny(['pos.view', 'transactions.print', 'transactions.view'])"
                                 :href="`/transactions/${row.original.id}/print`"
                                 target="_blank"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
@@ -394,6 +400,7 @@ const columns = [
                                 <UIcon name="i-lucide-printer" class="size-4" />
                             </a>
                             <button
+                                v-if="canAny(['pos.delete', 'transactions.delete'])"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10"
                                 type="button"
                                 title="Hapus / Batal Transaksi"

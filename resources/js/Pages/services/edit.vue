@@ -582,6 +582,7 @@ const submit = () => {
                     <div class="flex gap-2 w-full sm:w-auto">
                         <UButton color="neutral" variant="outline" label="Batal" type="button" class="flex-1 sm:flex-initial justify-center" @click="router.visit('/services')" />
                         <UButton
+                            v-if="$can('services.edit')"
                             type="button"
                             color="primary"
                             icon="i-lucide-check-circle-2"

@@ -5,10 +5,13 @@ import DashboardLayout from '../../Layouts/DashboardLayout.vue';
 import { CalendarDate } from '@internationalized/date';
 import { router } from '@inertiajs/vue3';
 import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
+import { usePermission } from '../../composables/usePermission';
 
 defineOptions({
     layout: [DashboardLayout, { title: 'Servis / Work Order', panelId: 'services' }],
 });
+
+const { can, canAny } = usePermission();
 
 const props = defineProps({
     serviceOrders: Object,
@@ -416,6 +419,7 @@ const columns = [
 
                     <!-- Open TV Display Screen Link -->
                     <a
+                        v-if="canAny(['services.display', 'services.view', 'work-orders.view'])"
                         href="/services/display"
                         target="_blank"
                         class="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 rounded-md hover:bg-emerald-500/20 transition-colors shadow-sm"
@@ -426,6 +430,7 @@ const columns = [
                     </a>
 
                     <UButton
+                        v-if="canAny(['services.create', 'work-orders.create'])"
                         icon="i-lucide-plus"
                         label="Servis Baru"
                         class="justify-center shadow-md"
@@ -726,6 +731,7 @@ const columns = [
                     <template #actions-cell="{ row }">
                         <div class="flex justify-end gap-1.5">
                             <button
+                                v-if="canAny(['services.view', 'work-orders.view'])"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted"
                                 type="button"
                                 title="Lihat Detail"
@@ -734,6 +740,7 @@ const columns = [
                                 <UIcon name="i-lucide-eye" class="size-4" />
                             </button>
                             <button
+                                v-if="canAny(['services.edit', 'work-orders.edit'])"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-primary/30 text-primary hover:bg-primary/10"
                                 type="button"
                                 title="Edit Workspace Fullscreen"
@@ -742,6 +749,7 @@ const columns = [
                                 <UIcon name="i-lucide-pencil" class="size-4" />
                             </button>
                             <button
+                                v-if="canAny(['services.delete', 'work-orders.delete'])"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10"
                                 type="button"
                                 title="Hapus SPK"

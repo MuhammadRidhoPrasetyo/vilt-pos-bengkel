@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Spatie\Permission\Models\Permission;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -40,7 +41,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user() ? array_merge($request->user()->toArray(), [
                     'roles' => $request->user()->getRoleNames(),
-                    'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                    'permissions' => ($request->user()->hasRole('owner') || $request->user()->hasRole('super-admin'))
+                        ? Permission::pluck('name')
+                        : $request->user()->getAllPermissions()->pluck('name'),
                     'store' => $request->user()->store ? $request->user()->store->only(['id', 'name', 'code']) : null,
                 ]) : null,
             ],

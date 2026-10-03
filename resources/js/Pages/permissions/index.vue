@@ -226,7 +226,7 @@ const columns = computed(() => [
                         <UButton color="neutral" variant="outline" icon="i-lucide-sliders-horizontal" label="Display" class="w-full justify-center sm:w-auto" />
                     </UDropdownMenu>
 
-                    <UButton icon="i-lucide-plus" label="Tambah Permission" class="w-full justify-center sm:w-auto" @click="openCreate" />
+                    <UButton v-if="$can('permissions.create')" icon="i-lucide-plus" label="Tambah Permission" class="w-full justify-center sm:w-auto" @click="openCreate" />
                 </template>
             </UDashboardToolbar>
 
@@ -251,13 +251,13 @@ const columns = computed(() => [
                     >
                         <template #actions-cell="{ row }">
                             <div class="flex justify-end gap-2">
-                                <button class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" type="button" title="Detail" @click="openShow(row.original)">
+                                <button v-if="$can('permissions.view')" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" type="button" title="Detail" @click="openShow(row.original)">
                                     <UIcon name="i-lucide-eye" class="size-4" />
                                 </button>
-                                <button class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" type="button" title="Edit" @click="openEdit(row.original)">
+                                <button v-if="$can('permissions.edit')" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" type="button" title="Edit" @click="openEdit(row.original)">
                                     <UIcon name="i-lucide-pencil" class="size-4" />
                                 </button>
-                                <button class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10" type="button" title="Hapus" @click="destroyPermission(row.original)">
+                                <button v-if="$can('permissions.delete')" class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10" type="button" title="Hapus" @click="destroyPermission(row.original)">
                                     <UIcon name="i-lucide-trash-2" class="size-4" />
                                 </button>
                             </div>

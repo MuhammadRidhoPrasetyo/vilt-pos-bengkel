@@ -87,11 +87,15 @@ class UserRolePermissionSeeder extends Seeder
                 'payments.edit' => 'Mengubah metode pembayaran',
                 'payments.delete' => 'Menghapus metode pembayaran',
 
-                // Master Data - Cash Flow Categories
+                // Master Data - Cash Flow Categories & Cash Flows
                 'cash-flow-categories.view' => 'Melihat kategori arus kas',
                 'cash-flow-categories.create' => 'Menambahkan kategori arus kas baru',
                 'cash-flow-categories.edit' => 'Mengubah kategori arus kas',
                 'cash-flow-categories.delete' => 'Menghapus kategori arus kas',
+                'cash-flows.view' => 'Melihat daftar dan riwayat transaksi arus kas (cash flows)',
+                'cash-flows.create' => 'Mencatat pemasukan atau pengeluaran arus kas manual',
+                'cash-flows.edit' => 'Mengubah catatan arus kas',
+                'cash-flows.delete' => 'Menghapus catatan arus kas',
 
                 // Catalog & Products
                 'product-categories.view' => 'Melihat kategori produk / suku cadang',
@@ -153,17 +157,34 @@ class UserRolePermissionSeeder extends Seeder
                 'printers.edit' => 'Mengubah konfigurasi printer toko',
                 'printers.delete' => 'Menghapus konfigurasi printer toko',
 
-                // POS & Work Orders / Services
+                // POS & Transactions
                 'pos.view' => 'Mengakses menu kasir / POS',
                 'pos.create' => 'Melakukan transaksi penjualan kasir',
+                'transactions.view' => 'Melihat daftar dan riwayat transaksi penjualan / kasir',
+                'transactions.create' => 'Membuat transaksi kasir / penjualan baru',
+                'transactions.edit' => 'Mengubah data transaksi penjualan',
+                'transactions.delete' => 'Menghapus / membatalkan transaksi penjualan',
+                'transactions.print' => 'Mencetak struk / nota transaksi kasir',
+
+                // Services & Work Orders
                 'services.view' => 'Melihat daftar Surat Perintah Kerja (SPK) / Servis',
                 'services.create' => 'Membuat SPK perbaikan / servis kendaraan baru',
                 'services.edit' => 'Mengubah data SPK / menambah suku cadang & jasa servis',
                 'services.delete' => 'Membatalkan / menghapus SPK servis',
+                'services.display' => 'Mengakses layar TV display monitor antrean servis',
+                'services.status.update' => 'Mengubah status pengerjaan servis SPK',
                 'work-orders.view' => 'Melihat daftar Surat Perintah Kerja (SPK) / Perbaikan',
                 'work-orders.create' => 'Membuat SPK perbaikan kendaraan baru',
                 'work-orders.edit' => 'Mengubah data SPK / menambah suku cadang servis',
                 'work-orders.delete' => 'Batalkan / hapus SPK perbaikan',
+
+                // Dashboard
+                'dashboard.view' => 'Mengakses dashboard & ringkasan operasional bengkel',
+
+                // Database Backup & System
+                'database-backup.view' => 'Melihat status backup dan halaman manajemen database',
+                'database-backup.export' => 'Mengunduh file backup cadangan database SQLite',
+                'database-backup.import' => 'Memulihkan / restore database dari file cadangan',
 
                 // User & Role Access Management
                 'roles.view' => 'Melihat daftar peran / Hak Akses Pengguna',
@@ -191,8 +212,12 @@ class UserRolePermissionSeeder extends Seeder
 
             $roleKasir = Role::findOrCreate('kasir', 'web');
             $roleKasir->syncPermissions([
+                'dashboard.view',
                 'pos.view',
                 'pos.create',
+                'transactions.view',
+                'transactions.create',
+                'transactions.print',
                 'products.view',
                 'product-variants.view',
                 'product-stocks.view',
@@ -201,11 +226,21 @@ class UserRolePermissionSeeder extends Seeder
                 'product-prices.view',
                 'product-discounts.view',
                 'payments.view',
+                'partners.view',
+                'services.view',
                 'work-orders.view',
+                'cash-flows.view',
+                'cash-flows.create',
             ]);
 
             $roleMekanik = Role::findOrCreate('mekanik', 'web');
             $roleMekanik->syncPermissions([
+                'dashboard.view',
+                'services.view',
+                'services.create',
+                'services.edit',
+                'services.display',
+                'services.status.update',
                 'work-orders.view',
                 'work-orders.create',
                 'work-orders.edit',

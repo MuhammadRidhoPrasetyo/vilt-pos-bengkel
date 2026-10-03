@@ -3,10 +3,13 @@ import DashboardLayout from '../Layouts/DashboardLayout.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { CalendarDate, DateFormatter, getLocalTimeZone, today } from '@internationalized/date';
 import { computed, ref, watch } from 'vue';
+import { usePermission } from '../composables/usePermission';
 
 defineOptions({
     layout: [DashboardLayout, { title: 'Beranda & Arus Kas', panelId: 'dashboard' }],
 });
+
+const { can, canAny } = usePermission();
 
 const props = defineProps({
     summary: {
@@ -252,59 +255,61 @@ watch(modalType, (newType) => {
 <template>
     <div class="space-y-6">
         <!-- Toolbar & Filter -->
-        <UDashboardToolbar>
+        <UDashboardToolbar v-if="canAny(['cash-flows.view', 'pos.view', 'transactions.view', 'cash-flows.create'])">
             <template #left>
-                <UPopover :content="{ align: 'start' }" :modal="true">
-                    <UButton
-                        color="neutral"
-                        variant="ghost"
-                        icon="i-lucide-calendar"
-                        class="-ms-1 data-[state=open]:bg-elevated group"
-                    >
-                        <span class="truncate">{{ rangeLabel }}</span>
+                <div v-if="canAny(['cash-flows.view', 'pos.view', 'transactions.view'])" class="flex items-center gap-2">
+                    <UPopover :content="{ align: 'start' }" :modal="true">
+                        <UButton
+                            color="neutral"
+                            variant="ghost"
+                            icon="i-lucide-calendar"
+                            class="-ms-1 data-[state=open]:bg-elevated group"
+                        >
+                            <span class="truncate">{{ rangeLabel }}</span>
 
-                        <template #trailing>
-                            <UIcon name="i-lucide-chevron-down" class="size-5 shrink-0 text-dimmed transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                        </template>
-                    </UButton>
+                            <template #trailing>
+                                <UIcon name="i-lucide-chevron-down" class="size-5 shrink-0 text-dimmed transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                            </template>
+                        </UButton>
 
-                    <template #content>
-                        <div class="flex items-stretch divide-default sm:divide-x">
-                            <div class="hidden flex-col justify-center sm:flex">
-                                <UButton
-                                    v-for="(range, index) in ranges"
-                                    :key="index"
-                                    :label="range.label"
-                                    color="neutral"
-                                    variant="ghost"
-                                    class="rounded-none px-4"
-                                    :class="[isRangeSelected(range) ? 'bg-elevated' : 'hover:bg-elevated/50']"
-                                    truncate
-                                    @click="selectRange(range)"
+                        <template #content>
+                            <div class="flex items-stretch divide-default sm:divide-x">
+                                <div class="hidden flex-col justify-center sm:flex">
+                                    <UButton
+                                        v-for="(range, index) in ranges"
+                                        :key="index"
+                                        :label="range.label"
+                                        color="neutral"
+                                        variant="ghost"
+                                        class="rounded-none px-4"
+                                        :class="[isRangeSelected(range) ? 'bg-elevated' : 'hover:bg-elevated/50']"
+                                        truncate
+                                        @click="selectRange(range)"
+                                    />
+                                </div>
+
+                                <UCalendar
+                                    v-model="calendarRange"
+                                    class="p-2"
+                                    :number-of-months="2"
+                                    range
                                 />
                             </div>
+                        </template>
+                    </UPopover>
 
-                            <UCalendar
-                                v-model="calendarRange"
-                                class="p-2"
-                                :number-of-months="2"
-                                range
-                            />
-                        </div>
-                    </template>
-                </UPopover>
-
-                <USelect
-                    v-model="period"
-                    :items="periods"
-                    variant="ghost"
-                    class="data-[state=open]:bg-elevated"
-                    :ui="{ value: 'capitalize', itemLabel: 'capitalize', trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
-                />
+                    <USelect
+                        v-model="period"
+                        :items="periods"
+                        variant="ghost"
+                        class="data-[state=open]:bg-elevated"
+                        :ui="{ value: 'capitalize', itemLabel: 'capitalize', trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
+                    />
+                </div>
             </template>
 
             <template #right>
-                <div class="flex items-center gap-2">
+                <div v-if="can('cash-flows.create')" class="flex items-center gap-2">
                     <button
                         type="button"
                         class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition-colors shadow-xs"
@@ -325,10 +330,10 @@ watch(modalType, (newType) => {
             </template>
         </UDashboardToolbar>
 
-        <!-- Dynamic Cash Flow Metric Cards -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Dynamic Cash Flow & Activity Metric Cards -->
+        <div v-if="canAny(['cash-flows.view', 'pos.view', 'transactions.view', 'services.view', 'work-orders.view'])" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <!-- Total Pemasukan -->
-            <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-center justify-between shadow-xs">
+            <div v-if="can('cash-flows.view')" class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-center justify-between shadow-xs">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Total Pemasukan Kas</p>
                     <p class="mt-1 text-2xl font-extrabold font-mono text-emerald-300">
@@ -342,7 +347,7 @@ watch(modalType, (newType) => {
             </div>
 
             <!-- Total Pengeluaran -->
-            <div class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 flex items-center justify-between shadow-xs">
+            <div v-if="can('cash-flows.view')" class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 flex items-center justify-between shadow-xs">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wider text-rose-400">Total Pengeluaran Kas</p>
                     <p class="mt-1 text-2xl font-extrabold font-mono text-rose-300">
@@ -356,7 +361,7 @@ watch(modalType, (newType) => {
             </div>
 
             <!-- Saldo Kas Bersih -->
-            <div :class="[
+            <div v-if="can('cash-flows.view')" :class="[
                 'rounded-xl border p-4 flex items-center justify-between shadow-xs',
                 summary.net_balance >= 0 ? 'border-indigo-500/20 bg-indigo-500/5' : 'border-amber-500/20 bg-amber-500/5'
             ]">
@@ -373,7 +378,7 @@ watch(modalType, (newType) => {
             </div>
 
             <!-- Total Penjualan POS -->
-            <div class="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex items-center justify-between shadow-xs">
+            <div v-if="canAny(['pos.view', 'transactions.view'])" class="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex items-center justify-between shadow-xs">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wider text-blue-400">Total Transaksi POS</p>
                     <p class="mt-1 text-2xl font-extrabold font-mono text-blue-300">
@@ -385,10 +390,24 @@ watch(modalType, (newType) => {
                     <UIcon name="i-lucide-shopping-cart" class="size-6" />
                 </div>
             </div>
+
+            <!-- Antrean Servis / SPK -->
+            <div v-if="canAny(['services.view', 'work-orders.view'])" class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-center justify-between shadow-xs">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-amber-400">Antrean Servis / SPK</p>
+                    <p class="mt-1 text-2xl font-extrabold font-mono text-amber-300">
+                        {{ summary.active_services_count || 0 }} <span class="text-xs font-normal text-muted">Unit</span>
+                    </p>
+                    <p class="mt-1 text-[11px] text-amber-400/80">Pending & Dalam Pengerjaan</p>
+                </div>
+                <div class="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                    <UIcon name="i-lucide-wrench" class="size-6" />
+                </div>
+            </div>
         </div>
 
         <!-- Stock Alert & Restock Section -->
-        <div class="space-y-4 rounded-xl border border-default bg-default p-5 shadow-xs">
+        <div v-if="canAny(['product-stocks.view', 'products.view'])" class="space-y-4 rounded-xl border border-default bg-default p-5 shadow-xs">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-default pb-4">
                 <div>
                     <div class="flex items-center gap-2">
@@ -522,11 +541,13 @@ watch(modalType, (newType) => {
                             </td>
                             <td class="p-3 text-center whitespace-nowrap">
                                 <Link
+                                    v-if="can('purchases.create')"
                                     href="/purchases/create"
                                     class="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
                                 >
                                     <UIcon name="i-lucide-plus" class="size-3" /> Restok
                                 </Link>
+                                <span v-else class="text-muted text-[11px]">-</span>
                             </td>
                         </tr>
                         <tr v-if="filteredStockAlerts.length === 0">
@@ -542,7 +563,7 @@ watch(modalType, (newType) => {
         </div>
 
         <!-- Cash Flows Index Section -->
-        <div class="space-y-4 rounded-xl border border-default bg-default p-5 shadow-xs">
+        <div v-if="can('cash-flows.view')" class="space-y-4 rounded-xl border border-default bg-default p-5 shadow-xs">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-default pb-4">
                 <div>
                     <div class="flex items-center gap-2">
@@ -624,8 +645,22 @@ watch(modalType, (newType) => {
             </div>
         </div>
 
+        <!-- Fallback banner if no modules permitted for dashboard widgets -->
+        <div
+            v-if="!canAny(['cash-flows.view', 'pos.view', 'transactions.view', 'product-stocks.view', 'products.view', 'services.view', 'work-orders.view'])"
+            class="rounded-xl border border-default bg-default p-8 text-center shadow-xs space-y-3"
+        >
+            <div class="mx-auto size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <UIcon name="i-lucide-shield-check" class="size-6" />
+            </div>
+            <h2 class="text-base font-bold text-highlighted">Selamat Datang di Sistem POS Bengkel</h2>
+            <p class="text-xs text-muted max-w-md mx-auto">
+                Akun Anda telah terotentikasi. Silakan gunakan menu navigasi di sebelah kiri untuk mengakses modul sesuai dengan hak izin yang diberikan kepada Anda.
+            </p>
+        </div>
+
         <!-- Input Modal (Pemasukan / Pengeluaran) -->
-        <div v-if="modalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+        <div v-if="modalOpen && can('cash-flows.create')" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
             <div class="w-full max-w-lg rounded-xl bg-default p-6 shadow-2xl space-y-4 border border-default">
                 <div class="flex items-center justify-between border-b border-default pb-3">
                     <div class="flex items-center gap-2">

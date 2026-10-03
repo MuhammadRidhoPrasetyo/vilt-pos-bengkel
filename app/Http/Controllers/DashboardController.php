@@ -6,6 +6,7 @@ use App\Http\Resources\CashFlowResource;
 use App\Models\CashFlow;
 use App\Models\CashFlowCategory;
 use App\Models\ProductStock;
+use App\Models\ServiceOrder;
 use App\Models\Store;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
@@ -94,6 +95,8 @@ class DashboardController extends Controller
             ];
         });
 
+        $activeServicesCount = ServiceOrder::whereIn('status', ['pending', 'in_progress', 'ready'])->count();
+
         return inertia('Dashboard', [
             'summary' => [
                 'total_income' => $totalIncome,
@@ -101,6 +104,7 @@ class DashboardController extends Controller
                 'net_balance' => $netBalance,
                 'total_transactions' => $totalTransactions,
                 'total_revenue' => $totalRevenue,
+                'active_services_count' => $activeServicesCount,
             ],
             'recentCashFlows' => CashFlowResource::collection($recentCashFlows),
             'stockAlerts' => $stockAlertRecords,

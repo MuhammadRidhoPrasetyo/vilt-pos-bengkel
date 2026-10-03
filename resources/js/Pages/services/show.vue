@@ -67,8 +67,8 @@ const getStatusBadge = (status) => {
             </div>
 
             <div class="flex items-center gap-2">
-                <UButton icon="i-lucide-printer" color="neutral" variant="outline" label="Cetak Struk SPK" @click="triggerPrint" />
-                <UButton icon="i-lucide-pencil" color="primary" label="Edit di Workspace" @click="router.visit(`/services/${so.id}/edit`)" />
+                <UButton v-if="$can('services.view')" icon="i-lucide-printer" color="neutral" variant="outline" label="Cetak Struk SPK" @click="triggerPrint" />
+                <UButton v-if="$can('services.edit')" icon="i-lucide-pencil" color="primary" label="Edit di Workspace" @click="router.visit(`/services/${so.id}/edit`)" />
             </div>
         </div>
 

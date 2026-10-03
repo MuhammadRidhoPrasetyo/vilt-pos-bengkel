@@ -30,7 +30,7 @@ services:
   node:
     image: node:22-bookworm-slim
     container_name: vilt_pos_node
-    restart: unless-stopped
+    restart: "no"
     working_dir: /var/www/html
     ports:
       - "${VITE_PORT:-5173}:5173"
@@ -38,7 +38,7 @@ services:
       - VITE_USE_POLLING=true
     volumes:
       - .:/var/www/html
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "if [ ! -d 'node_modules' ] || [ ! -d 'public/build' ]; then npm install && npm run build; fi"
     networks:
       - vilt_pos_network
 
@@ -56,6 +56,16 @@ services:
     depends_on:
       - app
     command: php artisan queue:work --verbose --tries=3 --timeout=90
+    networks:
+      - vilt_pos_network
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: vilt_pos_tunnel
+    restart: unless-stopped
+    command: ${CLOUDFLARE_TUNNEL_COMMAND:-tunnel --no-autoupdate --url http://nginx:80}
+    depends_on:
+      - nginx
     networks:
       - vilt_pos_network
 

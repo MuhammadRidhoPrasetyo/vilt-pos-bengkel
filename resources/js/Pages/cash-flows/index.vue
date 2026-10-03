@@ -122,7 +122,7 @@ watch(modalType, (newType) => {
                 <h1 class="text-2xl font-bold text-highlighted">Transaksi Arus Kas (Cash Flow)</h1>
                 <p class="text-xs sm:text-sm text-muted">Kelola pencatatan pemasukan, pengeluaran kas operasional, dan ringkasan saldo keuangan toko.</p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div v-if="$can('cash-flows.create')" class="flex flex-wrap gap-2">
                 <button
                     type="button"
                     class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-emerald-500 transition-colors shadow-sm"
@@ -304,7 +304,7 @@ watch(modalType, (newType) => {
                             </td>
                             <td class="p-3 text-center whitespace-nowrap">
                                 <button
-                                    v-if="item.is_manual"
+                                    v-if="item.is_manual && $can('cash-flows.delete')"
                                     type="button"
                                     class="rounded p-1 text-red-500 hover:bg-red-500/10 transition-colors"
                                     title="Hapus"

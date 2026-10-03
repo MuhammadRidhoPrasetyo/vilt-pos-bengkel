@@ -264,6 +264,7 @@ const columns = [
 
             <template #right>
                 <UButton
+                    v-if="$can('purchases.create')"
                     icon="i-lucide-plus"
                     label="Buat Transaksi Pembelian"
                     class="w-full justify-center sm:w-auto"
@@ -292,6 +293,7 @@ const columns = [
                     <template #actions-cell="{ row }">
                         <div class="flex justify-end gap-2">
                             <button
+                                v-if="$can('purchases.view')"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted"
                                 type="button"
                                 title="Lihat Detail"
@@ -300,6 +302,7 @@ const columns = [
                                 <UIcon name="i-lucide-eye" class="size-4" />
                             </button>
                             <button
+                                v-if="$can('purchases.delete')"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10"
                                 type="button"
                                 title="Hapus & Batalkan Stok"

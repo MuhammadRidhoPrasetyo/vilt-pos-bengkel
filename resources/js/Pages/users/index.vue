@@ -214,7 +214,7 @@ const columns = computed(() => [
                     <UButton color="neutral" variant="outline" icon="i-lucide-sliders-horizontal" label="Display" class="w-full justify-center sm:w-auto" />
                 </UDropdownMenu>
 
-                <UButton icon="i-lucide-plus" label="Tambah User" class="w-full justify-center sm:w-auto" @click="router.visit('/users/create')" />
+                <UButton v-if="$can('users.create')" icon="i-lucide-plus" label="Tambah User" class="w-full justify-center sm:w-auto" @click="router.visit('/users/create')" />
             </template>
         </UDashboardToolbar>
 
@@ -239,13 +239,13 @@ const columns = computed(() => [
                 >
                     <template #actions-cell="{ row }">
                         <div class="flex justify-end gap-2">
-                            <Link :href="`/users/${row.original.id}`" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" title="Detail">
+                            <Link v-if="$can('users.view')" :href="`/users/${row.original.id}`" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" title="Detail">
                                 <UIcon name="i-lucide-eye" class="size-4" />
                             </Link>
-                            <Link :href="`/users/${row.original.id}/edit`" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" title="Edit">
+                            <Link v-if="$can('users.edit')" :href="`/users/${row.original.id}/edit`" class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted" title="Edit">
                                 <UIcon name="i-lucide-pencil" class="size-4" />
                             </Link>
-                            <button class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10" type="button" title="Hapus" @click="destroyUser(row.original)">
+                            <button v-if="$can('users.delete')" class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10" type="button" title="Hapus" @click="destroyUser(row.original)">
                                 <UIcon name="i-lucide-trash-2" class="size-4" />
                             </button>
                         </div>

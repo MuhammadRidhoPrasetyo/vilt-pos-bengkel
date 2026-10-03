@@ -134,6 +134,7 @@ const executeRestore = () => {
 
                 <div class="pt-3 border-t border-default/60">
                     <a
+                        v-if="$can('database-backup.export')"
                         href="/settings/database/export"
                         class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors shadow-xs"
                     >
@@ -186,6 +187,7 @@ const executeRestore = () => {
 
                 <div class="pt-3 border-t border-default/60">
                     <button
+                        v-if="$can('database-backup.import')"
                         type="button"
                         :disabled="!selectedFile || form.processing"
                         class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-xs"

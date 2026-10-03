@@ -24,9 +24,9 @@ const cancelRecord = () => router.post(`/stock-transfers/${record.value.id}/canc
             </div>
             <div class="flex flex-wrap gap-2">
                 <Link href="/stock-transfers" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated">Kembali</Link>
-                <Link v-if="record.status === 'draft'" :href="`/stock-transfers/${record.id}/edit`" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated">Edit</Link>
-                <button v-if="record.status === 'draft'" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted" type="button" @click="postRecord">Posting</button>
-                <button v-if="record.status === 'draft'" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated" type="button" @click="cancelRecord">Cancel Draft</button>
+                <Link v-if="record.status === 'draft' && $can('stock-transfers.edit')" :href="`/stock-transfers/${record.id}/edit`" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated">Edit</Link>
+                <button v-if="record.status === 'draft' && $can('stock-transfers.post')" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-inverted" type="button" @click="postRecord">Posting</button>
+                <button v-if="record.status === 'draft' && $can('stock-transfers.cancel')" class="rounded-md border border-default px-4 py-2 text-sm font-medium hover:bg-elevated" type="button" @click="cancelRecord">Cancel Draft</button>
             </div>
         </div>
 

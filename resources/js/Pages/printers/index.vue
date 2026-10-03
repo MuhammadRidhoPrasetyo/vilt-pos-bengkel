@@ -251,7 +251,7 @@ const columns = [
             </template>
 
             <template #right>
-                <UButton icon="i-lucide-plus" label="Tambah Printer" class="w-full justify-center sm:w-auto" @click="openCreate" />
+                <UButton v-if="$can('printers.create')" icon="i-lucide-plus" label="Tambah Printer" class="w-full justify-center sm:w-auto" @click="openCreate" />
             </template>
         </UDashboardToolbar>
 
@@ -292,6 +292,7 @@ const columns = [
                     <template #actions-cell="{ row }">
                         <div class="flex justify-end gap-1.5">
                             <button
+                                v-if="$can('printers.view')"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-primary/30 text-primary hover:bg-primary/10"
                                 type="button"
                                 title="Test Print"
@@ -300,6 +301,7 @@ const columns = [
                                 <UIcon name="i-lucide-printer" class="size-4" />
                             </button>
                             <button
+                                v-if="$can('printers.edit')"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-default text-muted hover:bg-elevated hover:text-highlighted"
                                 type="button"
                                 title="Edit"
@@ -308,6 +310,7 @@ const columns = [
                                 <UIcon name="i-lucide-pencil" class="size-4" />
                             </button>
                             <button
+                                v-if="$can('printers.delete')"
                                 class="inline-flex size-8 items-center justify-center rounded-md border border-error/30 text-error hover:bg-error/10"
                                 type="button"
                                 title="Hapus"

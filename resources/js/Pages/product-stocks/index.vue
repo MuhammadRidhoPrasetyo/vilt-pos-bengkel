@@ -161,6 +161,7 @@ watch([search, selectedWarehouseId], () => {
                 <p class="text-sm text-muted">Monitoring jumlah stok fisik varian produk di seluruh lokasi gudang penyimpan.</p>
             </div>
             <button
+                v-if="$can('product-stocks.create')"
                 type="button"
                 class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-inverted hover:bg-primary/90 transition-all shadow-sm"
                 @click="openCreateStockModal"
@@ -259,6 +260,7 @@ watch([search, selectedWarehouseId], () => {
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-2">
                                 <button
+                                    v-if="$can('product-stocks.edit')"
                                     type="button"
                                     class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-default bg-elevated/50 text-muted hover:bg-elevated hover:text-highlighted transition-all"
                                     title="Edit / Adjust Stok"
@@ -267,6 +269,7 @@ watch([search, selectedWarehouseId], () => {
                                     <UIcon name="i-lucide-pencil" class="size-4" />
                                 </button>
                                 <button
+                                    v-if="$can('product-stocks.delete')"
                                     type="button"
                                     class="inline-flex items-center gap-1 size-8 justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
                                     title="Hapus Stok"
