@@ -20,7 +20,7 @@ class PurchaseService
         protected DocumentSequenceService $documentSequenceService
     ) {}
 
-    public function create(array $data, int $userId): Purchase
+    public function create(array $data, string|int $userId): Purchase
     {
         return DB::transaction(function () use ($data, $userId) {
             $purchaseDate = Carbon::parse($data['purchase_date']);
@@ -113,7 +113,7 @@ class PurchaseService
                 // Purchase Item
                 $purchaseItem = $purchase->items()->create([
                     'product_variant_id' => $itemData['product_variant_id'],
-                    'price_type' => $itemData['price_type'],
+                    'price_type' => $itemData['price_type'] ?? 'toko',
                     'quantity_ordered' => $qty,
                     'unit_purchase_price' => $unitPrice,
                     'item_discount_type' => $itemData['item_discount_type'] ?? null,

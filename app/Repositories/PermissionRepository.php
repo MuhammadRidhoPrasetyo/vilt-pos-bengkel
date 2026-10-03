@@ -11,7 +11,10 @@ class PermissionRepository
     public function paginate(?string $search = null): LengthAwarePaginator
     {
         return Permission::query()
-            ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%"))
+            ->when($search, fn ($query) => $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            }))
             ->withCount('roles')
             ->latest()
             ->paginate(10)
@@ -41,7 +44,7 @@ class PermissionRepository
     public function options(): Collection
     {
         return Permission::query()
-            ->select(['id', 'name'])
+            ->select(['id', 'name', 'guard_name', 'description'])
             ->orderBy('name')
             ->get();
     }

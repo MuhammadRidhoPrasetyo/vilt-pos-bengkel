@@ -27,10 +27,21 @@ class PurchaseRepository
             ->withQueryString();
     }
 
-    public function findWithRelations(string $id): Purchase
+    public function findWithRelations(string $id, bool $withTrashed = false): Purchase
     {
         return Purchase::query()
-            ->with(['store', 'supplier', 'creator', 'receiver', 'items.productVariant.product', 'items.inventoryBatches', 'cashFlows.category'])
+            ->when($withTrashed, fn ($q) => $q->withTrashed())
+            ->with([
+                'store',
+                'supplier',
+                'creator',
+                'receiver',
+                'items' => fn ($q) => $q->withTrashed(),
+                'items.productVariant' => fn ($q) => $q->withTrashed(),
+                'items.productVariant.product' => fn ($q) => $q->withTrashed(),
+                'items.inventoryBatches',
+                'cashFlows.category',
+            ])
             ->findOrFail($id);
     }
 }

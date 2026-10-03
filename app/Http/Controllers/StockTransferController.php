@@ -25,7 +25,13 @@ class StockTransferController extends Controller
     {
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
+        if ($status === 'all') {
+            $status = '';
+        }
         $storeId = $request->string('store_id')->toString();
+        if ($storeId === 'all') {
+            $storeId = '';
+        }
 
         $query = StockTransfer::query()
             ->with(['fromStore:id,name', 'toStore:id,name', 'createdBy:id,name', 'postedBy:id,name'])

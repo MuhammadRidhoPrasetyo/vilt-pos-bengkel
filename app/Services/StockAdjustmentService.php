@@ -95,6 +95,7 @@ class StockAdjustmentService
     public function delete(StockAdjustment $adjustment): void
     {
         $this->ensureDraft($adjustment);
+        $adjustment->items()->delete();
         $adjustment->delete();
     }
 

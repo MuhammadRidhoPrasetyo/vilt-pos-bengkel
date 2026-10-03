@@ -33,7 +33,13 @@ class ServiceOrderController extends Controller
     {
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
+        if ($status === 'all') {
+            $status = '';
+        }
         $storeId = $request->string('store_id')->toString();
+        if ($storeId === 'all') {
+            $storeId = '';
+        }
         $startDate = $request->string('start_date')->toString();
         $endDate = $request->string('end_date')->toString();
 
@@ -186,7 +192,7 @@ class ServiceOrderController extends Controller
 
     public function show(string $id): Response
     {
-        $serviceOrder = $this->repository->findWithRelations($id);
+        $serviceOrder = $this->repository->findWithRelations($id, true);
 
         return Inertia::render('services/show', [
             'serviceOrder' => new ServiceOrderResource($serviceOrder),

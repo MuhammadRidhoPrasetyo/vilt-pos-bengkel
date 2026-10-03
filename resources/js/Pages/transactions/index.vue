@@ -35,9 +35,9 @@ const formatDateString = (calDate) => {
 };
 
 const search = ref(props.filters?.search || '');
-const typeFilter = ref(props.filters?.type || '');
-const paymentStatusFilter = ref(props.filters?.payment_status || '');
-const storeFilter = ref(props.filters?.store_id || '');
+const typeFilter = ref(props.filters?.type || 'all');
+const paymentStatusFilter = ref(props.filters?.payment_status || 'all');
+const storeFilter = ref(props.filters?.store_id || 'all');
 const startDate = ref(props.filters?.start_date || '');
 const endDate = ref(props.filters?.end_date || '');
 
@@ -58,18 +58,18 @@ const itemToDelete = ref(null);
 const deleting = ref(false);
 
 const storeOptions = computed(() => [
-    { label: 'Semua Cabang', value: '' },
-    ...(props.options?.stores || []),
+    { label: 'Semua Cabang', value: 'all' },
+    ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) })),
 ]);
 
 const typeOptions = [
-    { label: 'Semua Tipe', value: '' },
+    { label: 'Semua Tipe', value: 'all' },
     { label: 'Penjualan Retail', value: 'retail' },
     { label: 'Pelunasan Servis', value: 'service' },
 ];
 
 const paymentStatusOptions = [
-    { label: 'Semua Status Bayar', value: '' },
+    { label: 'Semua Status Bayar', value: 'all' },
     { label: 'Lunas (Paid)', value: 'paid' },
     { label: 'Sebagian (Partial)', value: 'partial' },
     { label: 'Belum Bayar (Unpaid)', value: 'unpaid' },
@@ -89,16 +89,18 @@ const clearDateFilter = () => {
     endDate.value = '';
 };
 
-watch([search, typeFilter, paymentStatusFilter, storeFilter, startDate, endDate], () => {
+const applyFilters = () => {
     router.get('/transactions', {
-        search: search.value,
-        type: typeFilter.value,
-        payment_status: paymentStatusFilter.value,
-        store_id: storeFilter.value,
-        start_date: startDate.value,
-        end_date: endDate.value,
+        search: search.value || undefined,
+        type: typeFilter.value !== 'all' ? typeFilter.value : undefined,
+        payment_status: paymentStatusFilter.value !== 'all' ? paymentStatusFilter.value : undefined,
+        store_id: storeFilter.value !== 'all' ? storeFilter.value : undefined,
+        start_date: startDate.value || undefined,
+        end_date: endDate.value || undefined,
     }, { preserveState: true, replace: true });
-});
+};
+
+watch([search, typeFilter, paymentStatusFilter, storeFilter, startDate, endDate], applyFilters);
 
 const confirmDelete = () => {
     if (!itemToDelete.value) return;
@@ -292,7 +294,7 @@ const columns = [
                     <div class="flex items-center gap-1.5">
                         <UInputDate ref="inputDateRef" v-model="dateRangeModel" range class="sm:w-56">
                             <template #trailing>
-                                <UPopover :reference="inputDateRef?.inputsRef?.[0]?.$el">
+                                <UPopover>
                                     <UButton
                                         color="neutral"
                                         variant="link"

@@ -20,15 +20,15 @@ const currentUser = computed(() => page.props.auth?.user || {});
 const isOwner = computed(() => !currentUser.value.store_id || currentUser.value.roles?.includes('owner'));
 
 const search = ref(props.filters?.search || '');
-const selectedWarehouseId = ref(props.filters?.warehouse_id || '');
+const selectedWarehouseId = ref(props.filters?.warehouse_id || 'all');
 
 const stockList = computed(() => props.records?.data || props.records || []);
-const warehouses = computed(() => props.options?.warehouses || []);
+const warehouses = computed(() => (props.options?.warehouses || []).map((w) => ({ label: w.label, value: String(w.value) })));
 const variants = computed(() => props.options?.variants || []);
 const warehouseLocations = computed(() => props.options?.warehouseLocations || []);
 
 const warehouseSelectOptions = computed(() => [
-    { label: 'Semua Gudang', value: '' },
+    { label: 'Semua Gudang', value: 'all' },
     ...warehouses.value,
 ]);
 
@@ -66,9 +66,9 @@ const stockForm = useForm({
 });
 
 const filteredLocationOptions = computed(() => {
-    if (!stockForm.warehouse_id) return [{ label: 'Tanpa Lokasi Spesifik', value: '' }];
-    const matched = warehouseLocations.value.filter((l) => l.warehouse_id === stockForm.warehouse_id);
-    return [{ label: 'Tanpa Lokasi Spesifik', value: '' }, ...matched];
+    if (!stockForm.warehouse_id) return [{ label: 'Tanpa Lokasi Spesifik', value: 'none' }];
+    const matched = warehouseLocations.value.filter((l) => l.warehouse_id === stockForm.warehouse_id).map((l) => ({ label: l.label, value: String(l.value) }));
+    return [{ label: 'Tanpa Lokasi Spesifik', value: 'none' }, ...matched];
 });
 
 const openCreateStockModal = () => {
@@ -76,7 +76,7 @@ const openCreateStockModal = () => {
     stockForm.clearErrors();
     stockForm.product_variant_id = variants.value[0]?.value || '';
     stockForm.warehouse_id = warehouses.value[0]?.value || '';
-    stockForm.warehouse_location_id = '';
+    stockForm.warehouse_location_id = 'none';
     stockForm.quantity = 0;
     stockForm.minimum_stock = 0;
     stockForm.is_hidden = false;
@@ -88,7 +88,7 @@ const openEditStockModal = (stock) => {
     stockForm.clearErrors();
     stockForm.product_variant_id = stock.product_variant_id;
     stockForm.warehouse_id = stock.warehouse_id;
-    stockForm.warehouse_location_id = stock.warehouse_location_id || '';
+    stockForm.warehouse_location_id = stock.warehouse_location_id || 'none';
     stockForm.quantity = stock.quantity;
     stockForm.minimum_stock = stock.minimum_stock;
     stockForm.is_hidden = !!stock.is_hidden;
@@ -104,7 +104,7 @@ const submitStockForm = () => {
     const payload = {
         product_variant_id: stockForm.product_variant_id,
         warehouse_id: stockForm.warehouse_id,
-        warehouse_location_id: stockForm.warehouse_location_id ? stockForm.warehouse_location_id : null,
+        warehouse_location_id: (stockForm.warehouse_location_id && stockForm.warehouse_location_id !== 'none') ? stockForm.warehouse_location_id : null,
         quantity: stockForm.quantity,
         minimum_stock: stockForm.minimum_stock,
         is_hidden: stockForm.is_hidden,
@@ -141,7 +141,7 @@ const applyFilters = () => {
         '/product-stocks',
         {
             search: search.value || undefined,
-            warehouse_id: selectedWarehouseId.value || undefined,
+            warehouse_id: (selectedWarehouseId.value && selectedWarehouseId.value !== 'all') ? selectedWarehouseId.value : undefined,
         },
         { preserveState: true, replace: true }
     );

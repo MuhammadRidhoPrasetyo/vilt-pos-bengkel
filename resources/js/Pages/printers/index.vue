@@ -39,14 +39,14 @@ const form = useForm({
 });
 
 const storeOptions = computed(() => [
-    { label: 'Semua Cabang', value: '' },
-    ...(props.options?.stores || []),
+    { label: 'Semua Cabang', value: 'all' },
+    ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) })),
 ]);
 
 watch([search, storeFilter], () => {
     router.get('/printers', {
-        search: search.value,
-        store_id: storeFilter.value,
+        search: search.value || undefined,
+        store_id: (storeFilter.value && storeFilter.value !== 'all') ? storeFilter.value : undefined,
     }, { preserveState: true, replace: true });
 });
 

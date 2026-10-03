@@ -13,20 +13,24 @@ test('authenticated users can manage permissions', function () {
     $this->actingAs($user)
         ->post(route('permissions.store'), [
             'name' => 'users.view',
+            'description' => 'Melihat data pengguna',
             'guard_name' => 'web',
         ])
         ->assertRedirect(route('permissions.index'));
 
     $permission = Permission::where('name', 'users.view')->firstOrFail();
+    expect($permission->description)->toBe('Melihat data pengguna');
 
     $this->actingAs($user)
         ->put(route('permissions.update', $permission), [
             'name' => 'users.manage',
+            'description' => 'Mengelola data pengguna secara penuh',
             'guard_name' => 'web',
         ])
         ->assertRedirect(route('permissions.index'));
 
-    expect($permission->refresh()->name)->toBe('users.manage');
+    expect($permission->refresh()->name)->toBe('users.manage')
+        ->and($permission->description)->toBe('Mengelola data pengguna secara penuh');
 
     $this->actingAs($user)
         ->delete(route('permissions.destroy', $permission))

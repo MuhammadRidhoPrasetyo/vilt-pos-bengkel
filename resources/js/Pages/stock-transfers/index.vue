@@ -17,17 +17,17 @@ const showDelete = ref(false);
 const deleteTarget = ref(null);
 
 const statusItems = [
-    { label: 'Semua Status', value: '' },
+    { label: 'Semua Status', value: 'all' },
     { label: 'Draft', value: 'draft' },
     { label: 'Posted', value: 'posted' },
     { label: 'Cancelled', value: 'cancelled' },
 ];
-const storeItems = computed(() => [{ label: 'Semua Toko', value: '' }, ...(props.options?.stores || [])]);
+const storeItems = computed(() => [{ label: 'Semua Toko', value: 'all' }, ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) }))]);
 
 const applyFilters = () => router.get('/stock-transfers', {
     search: search.value || undefined,
-    status: status.value || undefined,
-    store_id: storeId.value || undefined,
+    status: (status.value && status.value !== 'all') ? status.value : undefined,
+    store_id: (storeId.value && storeId.value !== 'all') ? storeId.value : undefined,
 }, { preserveState: true, replace: true });
 const postRecord = (record) => router.post(`/stock-transfers/${record.id}/post`);
 const cancelRecord = (record) => router.post(`/stock-transfers/${record.id}/cancel`);

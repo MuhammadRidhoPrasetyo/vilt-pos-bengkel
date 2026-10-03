@@ -5,36 +5,29 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class StockAdjustmentItem extends BaseModel
+class StockOpnameItem extends BaseModel
 {
     use SoftDeletes;
 
     protected function casts(): array
     {
         return [
-            'quantity' => 'integer',
+            'system_quantity' => 'integer',
+            'physical_quantity' => 'integer',
+            'difference_quantity' => 'integer',
             'unit_cost' => 'decimal:2',
+            'difference_value' => 'decimal:2',
         ];
     }
 
-    public function stockAdjustment(): BelongsTo
+    public function stockOpname(): BelongsTo
     {
-        return $this->belongsTo(StockAdjustment::class)->withTrashed();
-    }
-
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class)->withTrashed();
+        return $this->belongsTo(StockOpname::class)->withTrashed();
     }
 
     public function productVariant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class)->withTrashed();
-    }
-
-    public function warehouse(): BelongsTo
-    {
-        return $this->belongsTo(Warehouse::class)->withTrashed();
     }
 
     public function warehouseLocation(): BelongsTo

@@ -33,16 +33,19 @@ class TransactionRepository
             ->withQueryString();
     }
 
-    public function findWithRelations(string $id): Transaction
+    public function findWithRelations(string $id, bool $withTrashed = false): Transaction
     {
         return Transaction::query()
+            ->when($withTrashed, fn ($q) => $q->withTrashed())
             ->with([
                 'store',
                 'user',
                 'customer',
                 'payment',
                 'serviceOrder.vehicle',
-                'items.productVariant.product',
+                'items' => fn ($q) => $q->withTrashed(),
+                'items.productVariant' => fn ($q) => $q->withTrashed(),
+                'items.productVariant.product' => fn ($q) => $q->withTrashed(),
                 'items.discountType',
                 'items.batches.inventoryBatch.warehouse',
                 'paymentAttempts.payment',

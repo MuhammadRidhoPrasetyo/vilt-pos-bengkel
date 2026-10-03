@@ -22,6 +22,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\StockAdjustmentController;
+use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TransactionController;
@@ -78,6 +79,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('stock-transfers/{stockTransfer}/post', [StockTransferController::class, 'post'])->name('stock-transfers.post');
     Route::post('stock-transfers/{stockTransfer}/cancel', [StockTransferController::class, 'cancel'])->name('stock-transfers.cancel');
     Route::resource('stock-transfers', StockTransferController::class);
+    Route::get('stock-opnames/warehouses/{warehouse}/stock', [StockOpnameController::class, 'warehouseStock'])->name('stock-opnames.warehouse-stock');
+    Route::post('stock-opnames/{stockOpname}/post', [StockOpnameController::class, 'post'])->name('stock-opnames.post');
+    Route::post('stock-opnames/{stockOpname}/cancel', [StockOpnameController::class, 'cancel'])->name('stock-opnames.cancel');
+    Route::resource('stock-opnames', StockOpnameController::class);
     Route::resource('roles', RoleController::class);
     Route::resource('permissions', PermissionController::class);
     Route::resource('users', UserController::class);

@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ServiceOrderItem extends BaseModel
 {
+    use SoftDeletes;
+
     protected function casts(): array
     {
         return [
@@ -18,16 +21,16 @@ class ServiceOrderItem extends BaseModel
 
     public function serviceOrder(): BelongsTo
     {
-        return $this->belongsTo(ServiceOrder::class);
+        return $this->belongsTo(ServiceOrder::class)->withTrashed();
     }
 
     public function productVariant(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(ProductVariant::class)->withTrashed();
     }
 
     public function mechanic(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'mechanic_id');
+        return $this->belongsTo(User::class, 'mechanic_id')->withTrashed();
     }
 }

@@ -33,10 +33,19 @@ class ServiceOrderRepository
             ->withQueryString();
     }
 
-    public function findWithRelations(string $id): ServiceOrder
+    public function findWithRelations(string $id, bool $withTrashed = false): ServiceOrder
     {
         return ServiceOrder::query()
-            ->with(['store', 'customer', 'vehicle', 'items.mechanic', 'items.productVariant.product'])
+            ->when($withTrashed, fn ($q) => $q->withTrashed())
+            ->with([
+                'store',
+                'customer',
+                'vehicle',
+                'items' => fn ($q) => $q->withTrashed(),
+                'items.mechanic' => fn ($q) => $q->withTrashed(),
+                'items.productVariant' => fn ($q) => $q->withTrashed(),
+                'items.productVariant.product' => fn ($q) => $q->withTrashed(),
+            ])
             ->findOrFail($id);
     }
 

@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Transaction extends BaseModel
 {
+    use SoftDeletes;
+
     protected function casts(): array
     {
         return [
@@ -28,17 +31,17 @@ class Transaction extends BaseModel
 
     public function store(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Store::class)->withTrashed();
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Partner::class, 'customer_id');
+        return $this->belongsTo(Partner::class, 'customer_id')->withTrashed();
     }
 
     public function payment(): BelongsTo
@@ -48,7 +51,7 @@ class Transaction extends BaseModel
 
     public function serviceOrder(): BelongsTo
     {
-        return $this->belongsTo(ServiceOrder::class);
+        return $this->belongsTo(ServiceOrder::class)->withTrashed();
     }
 
     public function items(): HasMany

@@ -47,6 +47,8 @@ class TransactionResource extends JsonResource
             'status' => $this->status,
             'note' => $this->note,
             'created_at' => $this->created_at?->toDateTimeString(),
+            'deleted_at' => $this->deleted_at?->toDateTimeString(),
+            'is_deleted' => $this->trashed(),
             'items' => TransactionItemResource::collection($this->whenLoaded('items')),
             'payment_attempts' => TransactionPaymentAttemptResource::collection($this->whenLoaded('paymentAttempts')),
         ];

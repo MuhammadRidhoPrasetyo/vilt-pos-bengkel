@@ -73,9 +73,9 @@ const optionItems = (field) => {
     }
 
     if (field.name === 'store_id') {
-        const hasGlobalOption = items.some((item) => item.value === '' || item.value === null);
+        const hasGlobalOption = items.some((item) => item.value === '__global__' || item.value === null);
         if (!hasGlobalOption) {
-            return [{ label: 'Global (Semua Toko)', value: '' }, ...items];
+            return [{ label: 'Global (Semua Toko)', value: '__global__' }, ...items];
         }
     }
 

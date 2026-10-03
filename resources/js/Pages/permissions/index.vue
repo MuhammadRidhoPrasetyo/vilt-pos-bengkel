@@ -27,6 +27,7 @@ const UCheckbox = resolveComponent('UCheckbox');
 
 const form = useForm({
     name: '',
+    description: '',
     guard_name: 'web',
 });
 
@@ -50,6 +51,7 @@ const guardFilterItems = computed(() => {
 const selectedRowsCount = computed(() => Object.keys(rowSelection.value).length);
 const displayableColumns = [
     { id: 'name', label: 'Nama' },
+    { id: 'description', label: 'Deskripsi' },
     { id: 'guard_name', label: 'Guard' },
     { id: 'roles_count', label: 'Roles' },
     { id: 'actions', label: 'Aksi' },
@@ -81,6 +83,7 @@ const openCreate = () => {
     selectedPermission.value = null;
     form.reset();
     form.clearErrors();
+    form.description = '';
     form.guard_name = 'web';
     modalMode.value = 'create';
 };
@@ -89,6 +92,7 @@ const openEdit = (permission) => {
     selectedPermission.value = permission;
     form.clearErrors();
     form.name = permission.name;
+    form.description = permission.description || '';
     form.guard_name = permission.guard_name;
     modalMode.value = 'edit';
 };
@@ -167,7 +171,16 @@ const columns = computed(() => [
         header: 'Nama',
         meta: {
             class: {
-                td: 'font-medium text-highlighted',
+                td: 'font-medium font-mono text-xs text-highlighted',
+            },
+        },
+    },
+    {
+        accessorKey: 'description',
+        header: 'Deskripsi',
+        meta: {
+            class: {
+                td: 'text-xs text-muted max-w-sm',
             },
         },
     },
@@ -282,22 +295,31 @@ const columns = computed(() => [
                     </button>
                 </div>
 
-                <div v-if="modalMode === 'show'" class="mt-5 grid gap-4 sm:grid-cols-2">
+                <div v-if="modalMode === 'show'" class="mt-5 space-y-3">
                     <div>
-                        <p class="text-sm text-muted">Nama</p>
-                        <p class="font-medium">{{ selectedPermission.name }}</p>
+                        <p class="text-xs text-muted">Nama Permission</p>
+                        <p class="font-mono text-sm font-semibold text-highlighted">{{ selectedPermission.name }}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-muted">Guard</p>
-                        <p class="font-medium">{{ selectedPermission.guard_name }}</p>
+                        <p class="text-xs text-muted">Deskripsi</p>
+                        <p class="text-sm text-highlighted">{{ selectedPermission.description || 'Tidak ada deskripsi.' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-muted">Guard</p>
+                        <p class="font-mono text-xs text-muted">{{ selectedPermission.guard_name }}</p>
                     </div>
                 </div>
 
                 <form v-else class="mt-5 space-y-4" @submit.prevent="submit">
                     <label class="grid gap-1 text-sm">
-                        <span class="font-medium">Nama</span>
-                        <input v-model="form.name" class="rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary" type="text" required />
+                        <span class="font-medium">Nama Permission</span>
+                        <input v-model="form.name" class="rounded-md border border-default bg-default px-3 py-2 outline-none focus:border-primary font-mono text-xs" type="text" placeholder="contoh: products.create" required />
                         <span v-if="form.errors.name" class="text-xs text-red-600">{{ form.errors.name }}</span>
+                    </label>
+                    <label class="grid gap-1 text-sm">
+                        <span class="font-medium">Deskripsi (Penjelasan Hak Akses)</span>
+                        <textarea v-model="form.description" rows="2" class="rounded-md border border-default bg-default px-3 py-2 text-sm outline-none focus:border-primary" placeholder="Tuliskan penjelasan izin dalam bahasa Indonesia..."></textarea>
+                        <span v-if="form.errors.description" class="text-xs text-red-600">{{ form.errors.description }}</span>
                     </label>
                     <label class="grid gap-1 text-sm">
                         <span class="font-medium">Guard</span>

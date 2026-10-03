@@ -97,6 +97,7 @@ class StockTransferService
     public function delete(StockTransfer $transfer): void
     {
         $this->ensureDraft($transfer);
+        $transfer->items()->delete();
         $transfer->delete();
     }
 

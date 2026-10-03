@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ServiceOrder extends BaseModel
 {
+    use SoftDeletes;
+
     protected function casts(): array
     {
         return [
@@ -20,17 +23,17 @@ class ServiceOrder extends BaseModel
 
     public function store(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Store::class)->withTrashed();
     }
 
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Partner::class, 'customer_id');
+        return $this->belongsTo(Partner::class, 'customer_id')->withTrashed();
     }
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(CustomerVehicle::class, 'vehicle_id');
+        return $this->belongsTo(CustomerVehicle::class, 'vehicle_id')->withTrashed();
     }
 
     public function items(): HasMany

@@ -33,8 +33,17 @@ class TransactionController extends Controller
     {
         $search = $request->string('search')->toString();
         $type = $request->string('type')->toString();
+        if ($type === 'all') {
+            $type = '';
+        }
         $paymentStatus = $request->string('payment_status')->toString();
+        if ($paymentStatus === 'all') {
+            $paymentStatus = '';
+        }
         $storeId = $request->string('store_id')->toString();
+        if ($storeId === 'all') {
+            $storeId = '';
+        }
         $startDate = $request->string('start_date')->toString();
         $endDate = $request->string('end_date')->toString();
 
@@ -130,7 +139,7 @@ class TransactionController extends Controller
 
     public function show(string $id): Response
     {
-        $transaction = $this->repository->findWithRelations($id);
+        $transaction = $this->repository->findWithRelations($id, true);
 
         return Inertia::render('transactions/show', [
             'transaction' => new TransactionResource($transaction),
@@ -155,7 +164,7 @@ class TransactionController extends Controller
 
     public function print(string $id): Response
     {
-        $transaction = $this->repository->findWithRelations($id);
+        $transaction = $this->repository->findWithRelations($id, true);
 
         return Inertia::render('transactions/print', [
             'transaction' => new TransactionResource($transaction),

@@ -19,7 +19,7 @@ class Warehouse extends BaseModel
 
     public function store(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Store::class)->withTrashed();
     }
 
     public function locations(): HasMany

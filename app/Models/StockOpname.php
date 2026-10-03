@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class StockAdjustment extends BaseModel
+class StockOpname extends BaseModel
 {
     use SoftDeletes;
 
@@ -15,12 +15,27 @@ class StockAdjustment extends BaseModel
     {
         return [
             'occurred_at' => 'datetime',
+            'posted_at' => 'datetime',
+            'total_system_qty' => 'integer',
+            'total_physical_qty' => 'integer',
+            'total_difference_qty' => 'integer',
+            'total_difference_value' => 'decimal:2',
         ];
     }
 
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class)->withTrashed();
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class)->withTrashed();
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
     }
 
     public function postedBy(): BelongsTo
@@ -30,7 +45,7 @@ class StockAdjustment extends BaseModel
 
     public function items(): HasMany
     {
-        return $this->hasMany(StockAdjustmentItem::class);
+        return $this->hasMany(StockOpnameItem::class);
     }
 
     public function movements(): MorphMany

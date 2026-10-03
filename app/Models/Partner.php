@@ -5,17 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Partner extends BaseModel
 {
+    use SoftDeletes;
+
     public function store(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Store::class)->withTrashed();
     }
 
     public function linkedStore(): BelongsTo
     {
-        return $this->belongsTo(Store::class, 'linked_store_id');
+        return $this->belongsTo(Store::class, 'linked_store_id')->withTrashed();
     }
 
     public function roles(): BelongsToMany

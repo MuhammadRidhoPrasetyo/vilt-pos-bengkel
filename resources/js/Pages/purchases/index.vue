@@ -54,13 +54,13 @@ const itemToDelete = ref(null);
 const deleting = ref(false);
 
 const storeOptions = computed(() => [
-    { label: 'Semua Cabang', value: '' },
-    ...(props.options?.stores || []),
+    { label: 'Semua Cabang', value: 'all' },
+    ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) })),
 ]);
 
 const supplierOptions = computed(() => [
-    { label: 'Semua Supplier', value: '' },
-    ...(props.options?.suppliers || []),
+    { label: 'Semua Supplier', value: 'all' },
+    ...(props.options?.suppliers || []).map((s) => ({ label: s.label, value: String(s.value) })),
 ]);
 
 const formatCurrency = (val) => {
@@ -77,15 +77,17 @@ const clearDateFilter = () => {
     endDate.value = '';
 };
 
-watch([search, storeFilter, supplierFilter, startDate, endDate], () => {
+const applyFilters = () => {
     router.get('/purchases', {
-        search: search.value,
-        store_id: storeFilter.value,
-        supplier_id: supplierFilter.value,
-        start_date: startDate.value,
-        end_date: endDate.value,
+        search: search.value || undefined,
+        store_id: storeFilter.value !== 'all' ? storeFilter.value : undefined,
+        supplier_id: supplierFilter.value !== 'all' ? supplierFilter.value : undefined,
+        start_date: startDate.value || undefined,
+        end_date: endDate.value || undefined,
     }, { preserveState: true, replace: true });
-});
+};
+
+watch([search, storeFilter, supplierFilter, startDate, endDate], applyFilters);
 
 const confirmDelete = () => {
     if (!itemToDelete.value) {
@@ -232,7 +234,7 @@ const columns = [
                     <div class="flex items-center gap-1.5">
                         <UInputDate ref="inputDateRef" v-model="dateRangeModel" range class="sm:w-60">
                             <template #trailing>
-                                <UPopover :reference="inputDateRef?.inputsRef?.[0]?.$el">
+                                <UPopover>
                                     <UButton
                                         color="neutral"
                                         variant="link"

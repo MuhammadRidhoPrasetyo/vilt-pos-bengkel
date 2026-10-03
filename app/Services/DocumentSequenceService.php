@@ -37,6 +37,7 @@ class DocumentSequenceService
                     'purchase' => 'PO',
                     'stock_adjustment' => 'SA',
                     'stock_transfer' => 'ST',
+                    'stock_opname' => 'SO',
                     default => strtoupper(substr($type, 0, 3)),
                 };
 

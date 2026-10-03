@@ -69,12 +69,12 @@ const updatingStatus = ref(false);
 const mechanicsList = computed(() => props.options?.mechanics?.data || props.options?.mechanics || []);
 
 const storeOptions = computed(() => [
-    { label: 'Semua Cabang', value: '' },
-    ...(props.options?.stores || []),
+    { label: 'Semua Cabang', value: 'all' },
+    ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) })),
 ]);
 
 const statusOptions = [
-    { label: 'Semua Status', value: '' },
+    { label: 'Semua Status', value: 'all' },
     { label: 'Check-in', value: 'checkin' },
     { label: 'Menunggu Sparepart', value: 'waiting_parts' },
     { label: 'Dalam Pengerjaan', value: 'in_progress' },
@@ -97,15 +97,17 @@ const clearDateFilter = () => {
     endDate.value = '';
 };
 
-watch([search, statusFilter, storeFilter, startDate, endDate], () => {
+const applyFilters = () => {
     router.get('/services', {
-        search: search.value,
-        status: statusFilter.value,
-        store_id: storeFilter.value,
-        start_date: startDate.value,
-        end_date: endDate.value,
+        search: search.value || undefined,
+        status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+        store_id: storeFilter.value !== 'all' ? storeFilter.value : undefined,
+        start_date: startDate.value || undefined,
+        end_date: endDate.value || undefined,
     }, { preserveState: true, replace: true });
-});
+};
+
+watch([search, statusFilter, storeFilter, startDate, endDate], applyFilters);
 
 const confirmDelete = () => {
     if (!itemToDelete.value) return;
@@ -364,7 +366,7 @@ const columns = [
                     <div class="flex items-center gap-1.5">
                         <UInputDate ref="inputDateRef" v-model="dateRangeModel" range class="sm:w-56">
                             <template #trailing>
-                                <UPopover :reference="inputDateRef?.inputsRef?.[0]?.$el">
+                                <UPopover>
                                     <UButton
                                         color="neutral"
                                         variant="link"

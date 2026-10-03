@@ -19,6 +19,7 @@ class StorePermissionRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('permissions', 'name')->where('guard_name', 'web')],
+            'description' => ['nullable', 'string', 'max:255'],
             'guard_name' => ['required', 'string', 'max:255'],
         ];
     }

@@ -27,6 +27,9 @@ class PrinterController extends Controller
     {
         $search = $request->string('search')->toString();
         $storeId = $request->string('store_id')->toString();
+        if ($storeId === 'all') {
+            $storeId = '';
+        }
 
         $printers = $this->repository->paginate($search, $storeId);
 

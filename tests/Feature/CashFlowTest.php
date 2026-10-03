@@ -95,7 +95,7 @@ test('manual cash flow entry can be deleted', function () {
     $response = $this->actingAs($user)->delete("/cash-flows/{$cashFlow->id}");
 
     $response->assertRedirect();
-    $this->assertDatabaseMissing('cash_flows', [
+    $this->assertSoftDeleted('cash_flows', [
         'id' => $cashFlow->id,
     ]);
 });

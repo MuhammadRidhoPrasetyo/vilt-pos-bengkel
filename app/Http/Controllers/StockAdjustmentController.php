@@ -24,7 +24,13 @@ class StockAdjustmentController extends Controller
     {
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
+        if ($status === 'all') {
+            $status = '';
+        }
         $storeId = $request->string('store_id')->toString();
+        if ($storeId === 'all') {
+            $storeId = '';
+        }
 
         $query = StockAdjustment::query()
             ->with(['store:id,name', 'postedBy:id,name'])

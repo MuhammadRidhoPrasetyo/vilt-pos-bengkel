@@ -313,6 +313,12 @@ const links = computed(() => {
             onSelect: () => navigateTo('/stock-transfers'),
         });
     }
+    if (can('stock-opnames.view')) {
+        warehouseChildren.push({
+            label: 'Stock Opname',
+            onSelect: () => navigateTo('/stock-opnames'),
+        });
+    }
     if (warehouseChildren.length > 0) {
         navItems.push({
             label: 'Gudang & Logistik',
@@ -320,11 +326,13 @@ const links = computed(() => {
             active: currentPath.value.startsWith('/warehouses')
                 || currentPath.value.startsWith('/warehouse-locations')
                 || currentPath.value.startsWith('/stock-adjustments')
-                || currentPath.value.startsWith('/stock-transfers'),
+                || currentPath.value.startsWith('/stock-transfers')
+                || currentPath.value.startsWith('/stock-opnames'),
             defaultOpen: currentPath.value.startsWith('/warehouses')
                 || currentPath.value.startsWith('/warehouse-locations')
                 || currentPath.value.startsWith('/stock-adjustments')
-                || currentPath.value.startsWith('/stock-transfers'),
+                || currentPath.value.startsWith('/stock-transfers')
+                || currentPath.value.startsWith('/stock-opnames'),
             type: 'trigger',
             children: warehouseChildren,
         });

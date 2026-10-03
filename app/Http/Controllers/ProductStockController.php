@@ -27,6 +27,9 @@ class ProductStockController extends Controller
     {
         $search = $request->string('search')->toString();
         $warehouseId = $request->string('warehouse_id')->toString();
+        if ($warehouseId === 'all') {
+            $warehouseId = '';
+        }
 
         $query = ProductStock::query()
             ->with([

@@ -12,12 +12,12 @@ class PermissionService
 
     public function create(array $data): Permission
     {
-        return $this->permissions->create(Arr::only($data, ['name', 'guard_name']));
+        return $this->permissions->create(Arr::only($data, ['name', 'guard_name', 'description']));
     }
 
     public function update(Permission $permission, array $data): Permission
     {
-        return $this->permissions->update($permission, Arr::only($data, ['name', 'guard_name']));
+        return $this->permissions->update($permission, Arr::only($data, ['name', 'guard_name', 'description']));
     }
 
     public function delete(Permission $permission): void

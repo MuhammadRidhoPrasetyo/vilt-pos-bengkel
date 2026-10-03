@@ -148,6 +148,12 @@ class UserRolePermissionSeeder extends Seeder
                 'stock-transfers.delete' => 'Menghapus draft transfer stok',
                 'stock-transfers.post' => 'Memposting transfer stok antar gudang',
                 'stock-transfers.cancel' => 'Membatalkan draft transfer stok',
+                'stock-opnames.view' => 'Melihat dokumen dan riwayat stock opname',
+                'stock-opnames.create' => 'Membuat draft sesi stock opname baru',
+                'stock-opnames.edit' => 'Mengubah draft dan menginput hasil hitungan fisik opname',
+                'stock-opnames.delete' => 'Menghapus draft stock opname',
+                'stock-opnames.post' => 'Memposting penyesuaian stok dari hasil stock opname ke ledger persediaan',
+                'stock-opnames.cancel' => 'Membatalkan draft sesi stock opname',
                 'purchases.view' => 'Melihat daftar dan detail transaksi pembelian supplier',
                 'purchases.create' => 'Membuat transaksi pembelian baru dari supplier',
                 'purchases.edit' => 'Mengubah data transaksi pembelian',
@@ -223,6 +229,8 @@ class UserRolePermissionSeeder extends Seeder
                 'product-stocks.view',
                 'stock-adjustments.view',
                 'stock-transfers.view',
+                'stock-opnames.view',
+                'stock-opnames.create',
                 'product-prices.view',
                 'product-discounts.view',
                 'payments.view',
@@ -249,6 +257,7 @@ class UserRolePermissionSeeder extends Seeder
                 'product-stocks.view',
                 'stock-adjustments.view',
                 'stock-transfers.view',
+                'stock-opnames.view',
             ]);
 
             // 5. Create 4 Users and Assign Roles

@@ -28,7 +28,13 @@ class PurchaseController extends Controller
     {
         $search = $request->string('search')->toString();
         $storeId = $request->string('store_id')->toString();
+        if ($storeId === 'all') {
+            $storeId = '';
+        }
         $supplierId = $request->string('supplier_id')->toString();
+        if ($supplierId === 'all') {
+            $supplierId = '';
+        }
         $startDate = $request->string('start_date')->toString();
         $endDate = $request->string('end_date')->toString();
 
@@ -121,14 +127,14 @@ class PurchaseController extends Controller
 
     public function store(StorePurchaseRequest $request): RedirectResponse
     {
-        $this->service->create($request->validated(), (int) auth()->id());
+        $this->service->create($request->validated(), (string) auth()->id());
 
         return redirect()->route('purchases.index')->with('success', 'Transaksi pembelian berhasil disimpan.');
     }
 
     public function show(string $id): Response
     {
-        $purchase = $this->repository->findWithRelations($id);
+        $purchase = $this->repository->findWithRelations($id, true);
 
         return Inertia::render('purchases/show', [
             'purchase' => new PurchaseResource($purchase),

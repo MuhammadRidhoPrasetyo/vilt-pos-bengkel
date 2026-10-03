@@ -19,7 +19,7 @@ class WarehouseLocation extends BaseModel
 
     public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->belongsTo(Warehouse::class)->withTrashed();
     }
 
     public function parent(): BelongsTo
