@@ -13,9 +13,10 @@
     ],
     "sail": false,
     "skills": [
+        "infer-conventions",
         "fortify-development",
         "laravel-best-practices",
-        "pest-testing",
+        "testing-best-practices",
         "inertia-vue-development",
         "tailwindcss-development",
         "medialibrary-development",
