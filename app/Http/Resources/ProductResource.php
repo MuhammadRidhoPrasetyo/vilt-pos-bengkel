@@ -22,6 +22,7 @@ class ProductResource extends JsonResource
             'display_receipt_name' => $this->display_receipt_name,
             'item_type' => $this->item_type,
             'has_variants' => $this->has_variants,
+            'is_active' => (bool) $this->is_active,
             'description' => $this->description,
             'images' => $this->relationLoaded('media') ? $this->getMedia('images')->map(fn ($media) => [
                 'id' => $media->id,

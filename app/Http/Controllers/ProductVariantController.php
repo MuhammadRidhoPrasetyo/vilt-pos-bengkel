@@ -104,9 +104,18 @@ class ProductVariantController extends Controller
         return redirect()->to(url()->previous(route('product-variants.index')))->with('success', 'Varian produk berhasil diperbarui.');
     }
 
-    public function destroy(ProductVariant $productVariant): RedirectResponse
+    public function destroy(Request $request, ProductVariant $productVariant): RedirectResponse
     {
+        if (! $request->user()?->can('product-variants.delete')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menghapus varian produk.');
+        }
+
         $productId = $productVariant->product_id;
+
+        if ($this->service->isUsedInTransactions($productVariant)) {
+            return redirect()->back()->with('error', 'Varian produk tidak dapat dihapus karena sudah memiliki riwayat transaksi atau pergerakan stok. Silakan nonaktifkan status aktif varian.');
+        }
+
         $this->service->delete($productVariant);
 
         return redirect()->to(url()->previous(route('products.show', $productId)))->with('success', 'Varian produk berhasil dihapus.');

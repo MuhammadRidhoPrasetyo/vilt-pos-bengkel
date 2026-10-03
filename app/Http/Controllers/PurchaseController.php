@@ -90,14 +90,17 @@ class PurchaseController extends Controller
             ->get()
             ->map(fn ($c) => ['label' => $c->name, 'value' => $c->id]);
 
-        $variants = ProductVariant::with([
-            'product:id,name,product_category_id,brand_id,unit_id',
-            'product.category:id,name',
-            'product.brand:id,name',
-            'product.unit:id,name,symbol',
-            'media',
-            'product.media',
-        ])
+        $variants = ProductVariant::query()
+            ->where('is_active', true)
+            ->whereHas('product', fn ($q) => $q->where('is_active', true))
+            ->with([
+                'product:id,name,product_category_id,brand_id,unit_id',
+                'product.category:id,name',
+                'product.brand:id,name',
+                'product.unit:id,name,symbol',
+                'media',
+                'product.media',
+            ])
             ->get()
             ->map(fn ($v) => [
                 'id' => $v->id,

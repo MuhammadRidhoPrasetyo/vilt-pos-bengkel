@@ -53,7 +53,7 @@ class ProductController extends Controller
                 'singular' => 'Product',
                 'route' => '/products',
                 'searchPlaceholder' => 'Cari produk',
-                'defaults' => ['item_type' => 'part', 'has_variants' => false],
+                'defaults' => ['item_type' => 'part', 'has_variants' => false, 'is_active' => true],
                 'fields' => [
                     ['name' => 'product_category_id', 'label' => 'Kategori', 'type' => 'select', 'optionKey' => 'productCategories', 'required' => true, 'table' => true, 'displayKey' => 'category.name'],
                     ['name' => 'brand_id', 'label' => 'Merek', 'type' => 'select', 'optionKey' => 'brands', 'table' => true, 'displayKey' => 'brand.name'],
@@ -62,6 +62,7 @@ class ProductController extends Controller
                     ['name' => 'receipt_name', 'label' => 'Nama Struk', 'table' => true],
                     ['name' => 'item_type', 'label' => 'Tipe Item', 'type' => 'select', 'required' => true, 'table' => true, 'options' => [['label' => 'Part', 'value' => 'part'], ['label' => 'Labor', 'value' => 'labor']]],
                     ['name' => 'has_variants', 'label' => 'Punya Varian', 'type' => 'checkbox', 'table' => true],
+                    ['name' => 'is_active', 'label' => 'Aktif', 'type' => 'checkbox', 'table' => true],
                     ['name' => 'description', 'label' => 'Deskripsi', 'type' => 'textarea'],
                     ['name' => 'images', 'label' => 'Gambar Produk (Galeri)', 'type' => 'image_gallery', 'description' => 'Upload foto galeri produk.'],
                 ],
@@ -145,8 +146,16 @@ class ProductController extends Controller
         return redirect()->to(url()->previous(route('products.index')))->with('success', 'Produk berhasil diperbarui.');
     }
 
-    public function destroy(Product $product): RedirectResponse
+    public function destroy(Request $request, Product $product): RedirectResponse
     {
+        if (! $request->user()?->can('products.delete')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menghapus produk.');
+        }
+
+        if ($this->service->isUsedInTransactions($product)) {
+            return redirect()->back()->with('error', 'Produk tidak dapat dihapus karena sudah memiliki riwayat transaksi atau pergerakan stok. Silakan nonaktifkan status aktif produk.');
+        }
+
         $this->service->delete($product);
 
         return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');

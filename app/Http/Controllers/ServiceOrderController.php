@@ -123,6 +123,8 @@ class ServiceOrderController extends Controller
             ->map(fn ($c) => ['label' => $c->name, 'value' => $c->id]);
 
         $variants = ProductVariant::query()
+            ->where('is_active', true)
+            ->whereHas('product', fn ($q) => $q->where('is_active', true))
             ->with(['product.category', 'product.brand', 'product.unit', 'media', 'product.media'])
             ->latest()
             ->get();
@@ -157,6 +159,8 @@ class ServiceOrderController extends Controller
             ->map(fn ($c) => ['label' => $c->name, 'value' => $c->id]);
 
         $variants = ProductVariant::query()
+            ->where('is_active', true)
+            ->whereHas('product', fn ($q) => $q->where('is_active', true))
             ->with(['product.category', 'product.brand', 'product.unit', 'media', 'product.media'])
             ->latest()
             ->get();

@@ -16,6 +16,14 @@ class Product extends BaseModel implements HasMedia
     use InteractsWithMedia;
     use SoftDeletes;
 
+    protected function casts(): array
+    {
+        return [
+            'has_variants' => 'boolean',
+            'is_active' => 'boolean',
+        ];
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('images');

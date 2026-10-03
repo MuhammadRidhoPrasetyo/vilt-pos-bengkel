@@ -2,7 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\InventoryMovement;
 use App\Models\Product;
+use App\Models\ProductMovement;
+use App\Models\ProductStock;
+use App\Models\PurchaseItem;
+use App\Models\ServiceOrderItem;
+use App\Models\StockAdjustmentItem;
+use App\Models\StockOpnameItem;
+use App\Models\StockTransferItem;
+use App\Models\TransactionItem;
 use App\Repositories\ProductRepository;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +52,29 @@ class ProductService
 
             return $product;
         });
+    }
+
+    public function isUsedInTransactions(Product $product): bool
+    {
+        $variantIds = $product->variants()->pluck('id');
+
+        if ($variantIds->isNotEmpty()) {
+            $hasUsage = TransactionItem::whereIn('product_variant_id', $variantIds)->exists()
+                || ServiceOrderItem::whereIn('product_variant_id', $variantIds)->exists()
+                || PurchaseItem::whereIn('product_variant_id', $variantIds)->exists()
+                || StockTransferItem::whereIn('product_variant_id', $variantIds)->exists()
+                || StockAdjustmentItem::whereIn('product_variant_id', $variantIds)->exists()
+                || StockOpnameItem::whereIn('product_variant_id', $variantIds)->exists()
+                || InventoryMovement::whereIn('product_variant_id', $variantIds)->exists()
+                || ProductStock::whereIn('product_variant_id', $variantIds)->where('quantity', '!=', 0)->exists();
+
+            if ($hasUsage) {
+                return true;
+            }
+        }
+
+        return StockAdjustmentItem::where('product_id', $product->id)->exists()
+            || ProductMovement::where('product_id', $product->id)->exists();
     }
 
     public function delete(Product $product): void

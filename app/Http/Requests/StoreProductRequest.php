@@ -11,6 +11,7 @@ class StoreProductRequest extends FormRequest
     {
         $this->merge([
             'has_variants' => filter_var($this->input('has_variants', false), FILTER_VALIDATE_BOOLEAN),
+            'is_active' => filter_var($this->input('is_active', true), FILTER_VALIDATE_BOOLEAN),
             'delete_media_ids' => collect($this->input('delete_media_ids', []))->filter()->values()->all(),
         ]);
     }
@@ -33,6 +34,7 @@ class StoreProductRequest extends FormRequest
             'receipt_name' => ['nullable', 'string', 'max:255'],
             'item_type' => ['required', Rule::in(['part', 'labor'])],
             'has_variants' => ['required', 'boolean'],
+            'is_active' => ['required', 'boolean'],
             'description' => ['nullable', 'string'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],

@@ -109,6 +109,8 @@ class TransactionController extends Controller
             ->get();
 
         $variants = ProductVariant::query()
+            ->where('is_active', true)
+            ->whereHas('product', fn ($q) => $q->where('is_active', true))
             ->with(['product.category', 'product.brand', 'product.unit', 'media', 'product.media', 'stocks.warehouse', 'discounts.discountType'])
             ->latest()
             ->get();

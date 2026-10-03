@@ -6,6 +6,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -75,6 +76,9 @@ test('authenticated user can view product variant show page', function () {
 
 test('deleting a product variant redirects back to parent product show page', function () {
     $user = User::factory()->create();
+    $role = Role::firstOrCreate(['name' => 'super-admin']);
+    $user->assignRole($role);
+
     $category = ProductCategory::create(['name' => 'Oli & Pelumas', 'pricing_mode' => 'fixed']);
 
     $product = Product::create([
