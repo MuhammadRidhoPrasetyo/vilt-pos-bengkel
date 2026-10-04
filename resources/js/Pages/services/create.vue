@@ -1,7 +1,9 @@
 <script setup>
 import ServiceWorkspaceLayout from '../../Layouts/ServiceWorkspaceLayout.vue';
 import { router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import echo from '../../echo.js';
+
 
 defineOptions({
     layout: [ServiceWorkspaceLayout, { title: 'Buat SPK Servis Baru', subtitle: 'Work Order Workspace' }],
@@ -267,7 +269,45 @@ const submit = () => {
         preserveScroll: true,
     });
 };
+
+// Real-time Stock Listener
+let activeEchoChannel = null;
+
+const setupEchoListener = (storeId) => {
+    if (!storeId || !echo) return;
+    if (activeEchoChannel) {
+        echo.leave(`store.${activeEchoChannel}`);
+    }
+
+    activeEchoChannel = storeId;
+    echo.private(`store.${storeId}`)
+        .listen('.ProductStockChanged', () => {
+            // Automatically refresh sparepart variants and stock without losing form input
+            router.reload({
+                only: ['variants'],
+                preserveState: true,
+                preserveScroll: true,
+            });
+        });
+};
+
+onMounted(() => {
+    setupEchoListener(form.store_id);
+});
+
+watch(() => form.store_id, (newStoreId) => {
+    if (newStoreId) {
+        setupEchoListener(newStoreId);
+    }
+});
+
+onUnmounted(() => {
+    if (activeEchoChannel && echo) {
+        echo.leave(`store.${activeEchoChannel}`);
+    }
+});
 </script>
+
 
 <template>
     <div class="flex h-full flex-col gap-4 overflow-y-auto pr-1">

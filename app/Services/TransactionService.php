@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Events\ProductStockChanged;
+use App\Events\ServiceOrderUpdated;
 use App\Models\CashFlow;
 use App\Models\CashFlowCategory;
 use App\Models\InventoryBatch;
@@ -22,7 +24,7 @@ class TransactionService
 
     public function create(array $data, string $userId): Transaction
     {
-        return DB::transaction(function () use ($data, $userId) {
+        $transaction = DB::transaction(function () use ($data, $userId) {
             $now = now();
             $storeId = $data['store_id'];
             $number = $this->generateNumber($now, $storeId);
@@ -231,6 +233,31 @@ class TransactionService
 
             return $transaction->fresh(['store', 'user', 'customer', 'payment', 'serviceOrder', 'items.productVariant.product', 'items.batches.inventoryBatch', 'paymentAttempts.payment']);
         });
+
+        // Broadcast stock update to service order page and other terminals
+        event(new ProductStockChanged(
+            storeId: $transaction->store_id,
+            reason: 'sale',
+            referenceNumber: $transaction->number
+        ));
+
+        // If this transaction paid for a service order, broadcast update to cashier list & TV display
+        if (! empty($data['service_order_id'])) {
+            $serviceOrder = $transaction->serviceOrder;
+            if ($serviceOrder) {
+                event(new ServiceOrderUpdated(
+                    storeId: $serviceOrder->store_id,
+                    serviceOrderId: $serviceOrder->id,
+                    status: 'invoiced',
+                    action: 'status_changed',
+                    orderNumber: $serviceOrder->number,
+                    plateNumber: $serviceOrder->plate_number,
+                    customerName: $serviceOrder->customer_name
+                ));
+            }
+        }
+
+        return $transaction;
     }
 
     public function recordPaymentAttempt(Transaction $transaction, array $data, string $userId): Transaction

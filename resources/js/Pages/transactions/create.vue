@@ -1,7 +1,10 @@
 <script setup>
 import PosWorkspaceLayout from '../../Layouts/PosWorkspaceLayout.vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import echo from '../../echo.js';
+import { playBellChime } from '../../composables/useSoundAlert.js';
+
 
 defineOptions({
     layout: [PosWorkspaceLayout, { title: 'POS Kasir Bengkel', subtitle: 'Terminal Penjualan & Pelunasan Servis' }],
@@ -331,6 +334,81 @@ const submitCheckout = () => {
     });
 };
 
+// Real-time Service Order & Stock Alert State
+const toastAlert = ref({
+    show: false,
+    title: '',
+    message: '',
+    serviceOrder: null,
+});
+let toastTimeout = null;
+let activeEchoChannel = null;
+
+const showLiveNotification = (title, message, serviceOrder = null) => {
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastAlert.value = {
+        show: true,
+        title,
+        message,
+        serviceOrder,
+    };
+    playBellChime();
+    toastTimeout = setTimeout(() => {
+        toastAlert.value.show = false;
+    }, 8000);
+};
+
+const openServiceFromNotification = (soData) => {
+    toastAlert.value.show = false;
+    if (!soData) return;
+    const target = readyOrdersList.value.find(o => String(o.id) === String(soData.id));
+    if (target) {
+        importServiceOrder(target);
+    } else {
+        serviceModalOpen.value = true;
+    }
+};
+
+const setupEchoListener = (storeId) => {
+    if (!storeId || !echo) return;
+    if (activeEchoChannel) {
+        echo.leave(`store.${activeEchoChannel}`);
+    }
+
+    activeEchoChannel = storeId;
+    echo.private(`store.${storeId}`)
+        .listen('.ServiceOrderUpdated', (e) => {
+            // Automatically refresh readyServiceOrders prop without clearing user's current cart/form
+            router.reload({
+                only: ['readyServiceOrders'],
+                preserveState: true,
+                preserveScroll: true,
+            });
+
+            // Alert cashier if order becomes ready or is newly created
+            if (e.status === 'ready' || e.action === 'created') {
+                const title = e.status === 'ready'
+                    ? '🔔 SPK Servis Siap Ditagih!'
+                    : '📋 SPK Servis Baru Masuk';
+                const message = `${e.order_number || 'SPK'} - ${e.plate_number || 'Kendaraan'} (${e.customer_name || 'Pelanggan'})`;
+                showLiveNotification(title, message, {
+                    id: e.service_order_id,
+                    number: e.order_number,
+                    plate_number: e.plate_number,
+                    customer_name: e.customer_name,
+                });
+            }
+        })
+        .listen('.ProductStockChanged', () => {
+            // Automatically refresh inventory variants and stock
+            router.reload({
+                only: ['variants'],
+                preserveState: true,
+                preserveScroll: true,
+            });
+        });
+};
+
 onMounted(() => {
     if (props.preselectedServiceOrderId) {
         const targetSo = readyOrdersList.value.find(o => String(o.id) === String(props.preselectedServiceOrderId));
@@ -338,8 +416,26 @@ onMounted(() => {
             importServiceOrder(targetSo);
         }
     }
+
+    setupEchoListener(form.store_id || props.activeStoreId);
+});
+
+watch(() => form.store_id, (newStoreId) => {
+    if (newStoreId) {
+        setupEchoListener(newStoreId);
+    }
+});
+
+onUnmounted(() => {
+    if (activeEchoChannel && echo) {
+        echo.leave(`store.${activeEchoChannel}`);
+    }
+    if (toastTimeout) {
+        clearTimeout(toastTimeout);
+    }
 });
 </script>
+
 
 <template>
     <div class="h-full flex flex-col gap-3 overflow-hidden">
@@ -757,5 +853,53 @@ onMounted(() => {
                 </div>
             </template>
         </UModal>
+
+        <!-- Live Realtime Notification Toast -->
+        <transition
+            enter-active-class="transform ease-out duration-300 transition"
+            enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+            enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
+            leave-active-class="transition ease-in duration-100"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="toastAlert.show"
+                class="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-slate-900/95 dark:bg-slate-900/95 border-2 border-emerald-500/80 shadow-2xl rounded-xl p-4 text-white backdrop-blur flex items-start gap-3"
+            >
+                <div class="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg shrink-0 animate-bounce">
+                    <UIcon name="i-lucide-bell-ring" class="size-5" />
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-semibold text-emerald-400">{{ toastAlert.title }}</h4>
+                    <p class="text-xs text-slate-300 mt-0.5 truncate">{{ toastAlert.message }}</p>
+                    <div class="mt-2.5 flex items-center gap-2">
+                        <button
+                            v-if="toastAlert.serviceOrder"
+                            type="button"
+                            class="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-md transition shadow-xs cursor-pointer"
+                            @click="openServiceFromNotification(toastAlert.serviceOrder)"
+                        >
+                            Proses / Impor
+                        </button>
+                        <button
+                            type="button"
+                            class="text-xs text-slate-400 hover:text-white px-2 py-1 cursor-pointer"
+                            @click="toastAlert.show = false"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    class="text-slate-400 hover:text-white cursor-pointer"
+                    @click="toastAlert.show = false"
+                >
+                    <UIcon name="i-lucide-x" class="size-4" />
+                </button>
+            </div>
+        </transition>
     </div>
 </template>
+

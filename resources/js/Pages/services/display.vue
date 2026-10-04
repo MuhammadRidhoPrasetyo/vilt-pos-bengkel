@@ -1,6 +1,8 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import echo from '../../echo.js';
+
 
 const props = defineProps({
     activeOrders: Object,
@@ -82,6 +84,31 @@ const formatTimeAgo = (dateTimeStr) => {
     return `${hours}j ${mins}m lalu`;
 };
 
+let activeEchoChannel = null;
+
+const setupEchoListener = (storeId) => {
+    if (!storeId || !echo) return;
+    if (activeEchoChannel) {
+        echo.leave(`store.${activeEchoChannel}`);
+    }
+
+    activeEchoChannel = storeId;
+    echo.private(`store.${storeId}`)
+        .listen('.ServiceOrderUpdated', (e) => {
+            // Instantly refresh active orders list on the TV display
+            router.reload({
+                only: ['activeOrders'],
+                preserveScroll: true,
+                preserveState: true,
+            });
+
+            // Play notification chime on status update or check-in
+            if (isAudioEnabled.value && (e.status === 'ready' || e.action === 'created')) {
+                playChime();
+            }
+        });
+};
+
 onMounted(() => {
     updateClock();
     clockTimer = setInterval(updateClock, 1000);
@@ -97,13 +124,19 @@ onMounted(() => {
             });
         }
     }, 1000);
+
+    setupEchoListener(props.store?.id);
 });
 
 onUnmounted(() => {
     if (clockTimer) clearInterval(clockTimer);
     if (countdownTimer) clearInterval(countdownTimer);
+    if (activeEchoChannel && echo) {
+        echo.leave(`store.${activeEchoChannel}`);
+    }
 });
 </script>
+
 
 <template>
     <Head title="Monitor Status Antrean Servis Bengkel" />

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\ServiceOrderUpdated;
 use App\Models\CustomerVehicle;
 use App\Models\ServiceOrder;
 use App\Models\ServiceOrderItem;
@@ -16,7 +17,7 @@ class ServiceOrderService
 
     public function create(array $data): ServiceOrder
     {
-        return DB::transaction(function () use ($data) {
+        $order = DB::transaction(function () use ($data) {
             $now = now();
             $storeId = $data['store_id'] ?? null;
             $number = $this->generateNumber($now, $storeId);
@@ -87,11 +88,23 @@ class ServiceOrderService
 
             return $serviceOrder->load(['items.mechanic', 'items.productVariant.product']);
         });
+
+        event(new ServiceOrderUpdated(
+            storeId: $order->store_id,
+            serviceOrderId: $order->id,
+            status: $order->status,
+            action: 'created',
+            orderNumber: $order->number,
+            plateNumber: $order->plate_number,
+            customerName: $order->customer_name
+        ));
+
+        return $order;
     }
 
     public function update(ServiceOrder $serviceOrder, array $data): ServiceOrder
     {
-        return DB::transaction(function () use ($serviceOrder, $data) {
+        $updated = DB::transaction(function () use ($serviceOrder, $data) {
             $now = now();
             $estimatedTotal = 0;
 
@@ -192,19 +205,44 @@ class ServiceOrderService
 
             return $serviceOrder->fresh(['items.mechanic', 'items.productVariant.product']);
         });
+
+        event(new ServiceOrderUpdated(
+            storeId: $updated->store_id,
+            serviceOrderId: $updated->id,
+            status: $updated->status,
+            action: 'updated',
+            orderNumber: $updated->number,
+            plateNumber: $updated->plate_number,
+            customerName: $updated->customer_name
+        ));
+
+        return $updated;
     }
 
     public function delete(ServiceOrder $serviceOrder): void
     {
+        $storeId = $serviceOrder->store_id;
+        $orderId = $serviceOrder->id;
+        $status = $serviceOrder->status;
+        $number = $serviceOrder->number;
+
         DB::transaction(function () use ($serviceOrder) {
             $serviceOrder->items()->delete();
             $serviceOrder->delete();
         });
+
+        event(new ServiceOrderUpdated(
+            storeId: $storeId,
+            serviceOrderId: $orderId,
+            status: $status,
+            action: 'deleted',
+            orderNumber: $number
+        ));
     }
 
     public function updateStatus(ServiceOrder $serviceOrder, string $status, int|string|null $mechanicId = null): ServiceOrder
     {
-        return DB::transaction(function () use ($serviceOrder, $status, $mechanicId) {
+        $updated = DB::transaction(function () use ($serviceOrder, $status, $mechanicId) {
             $now = now();
             $completedAt = $serviceOrder->completed_at;
 
@@ -233,6 +271,18 @@ class ServiceOrderService
 
             return $serviceOrder->fresh(['store', 'customer', 'items.mechanic', 'items.productVariant.product']);
         });
+
+        event(new ServiceOrderUpdated(
+            storeId: $updated->store_id,
+            serviceOrderId: $updated->id,
+            status: $updated->status,
+            action: 'status_changed',
+            orderNumber: $updated->number,
+            plateNumber: $updated->plate_number,
+            customerName: $updated->customer_name
+        ));
+
+        return $updated;
     }
 
     private function generateNumber(Carbon $date, ?string $storeId = null): string

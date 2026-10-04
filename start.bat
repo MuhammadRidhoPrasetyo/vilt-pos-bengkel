@@ -40,8 +40,9 @@ echo [OK] Konfigurasi siap.
 echo.
 
 :: 3. Menjalankan Docker Compose
-echo [3/5] Menyalakan container (PHP, Nginx, Queue, Tunnel)...
+echo [3/5] Menyalakan container (PHP, Nginx, Queue, Reverb, Tunnel)...
 docker compose up -d
+
 if %errorlevel% neq 0 (
     color 0C
     echo [ERROR] Gagal menjalankan docker compose.

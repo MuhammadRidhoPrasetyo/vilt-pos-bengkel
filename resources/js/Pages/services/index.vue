@@ -3,9 +3,11 @@ import DeleteConfirmationModal from '../../Components/DeleteConfirmationModal.vu
 import PaginationLinks from '../../Components/PaginationLinks.vue';
 import DashboardLayout from '../../Layouts/DashboardLayout.vue';
 import { CalendarDate } from '@internationalized/date';
-import { router } from '@inertiajs/vue3';
-import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
+import { computed, onMounted, onUnmounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 import { usePermission } from '../../composables/usePermission';
+import echo from '../../echo.js';
+
 
 defineOptions({
     layout: [DashboardLayout, { title: 'Servis / Work Order', panelId: 'services' }],
@@ -260,7 +262,44 @@ const columns = [
         meta: { class: { th: 'w-28 text-right', td: 'w-28 text-right' } },
     },
 ];
+
+// Real-time Service Orders Kanban / List Auto-Refresh
+const page = usePage();
+const userStoreId = computed(() => page.props.auth?.user?.store_id);
+let activeEchoChannel = null;
+
+const setupEchoListener = (storeId) => {
+    const targetStore = storeId || userStoreId.value;
+    if (!targetStore || !echo) return;
+    if (activeEchoChannel) {
+        echo.leave(`store.${activeEchoChannel}`);
+    }
+
+    activeEchoChannel = targetStore;
+    echo.private(`store.${targetStore}`)
+        .listen('.ServiceOrderUpdated', () => {
+            router.reload({
+                preserveScroll: true,
+                preserveState: true,
+            });
+        });
+};
+
+onMounted(() => {
+    setupEchoListener(storeFilter.value || userStoreId.value);
+});
+
+watch(storeFilter, (newStore) => {
+    setupEchoListener(newStore || userStoreId.value);
+});
+
+onUnmounted(() => {
+    if (activeEchoChannel && echo) {
+        echo.leave(`store.${activeEchoChannel}`);
+    }
+});
 </script>
+
 
 <template>
     <div class="space-y-4">
