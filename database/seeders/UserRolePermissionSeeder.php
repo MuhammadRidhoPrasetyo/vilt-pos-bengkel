@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Store;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -18,33 +17,9 @@ class UserRolePermissionSeeder extends Seeder
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         DB::transaction(function () {
-            // 2. Create 3 Bengkel / Toko
-            $storePusat = Store::query()->firstOrCreate([
-                'code' => 'PUSAT',
-            ], [
-                'name' => 'Bengkel Utama Pusat',
-                'phone' => '081234567891',
-                'address' => 'Jl. Raya Utama No. 1, Jakarta Pusat',
-            ]);
-
-            $storeJakarta = Store::query()->firstOrCreate([
-                'code' => 'JKT-01',
-            ], [
-                'name' => 'Bengkel Cabang Jakarta',
-                'phone' => '081234567892',
-                'address' => 'Jl. Sudirman No. 10, Jakarta Selatan',
-            ]);
-
-            $storeBandung = Store::query()->firstOrCreate([
-                'code' => 'BDG-01',
-            ], [
-                'name' => 'Bengkel Cabang Bandung',
-                'phone' => '081234567893',
-                'address' => 'Jl. Asia Afrika No. 20, Bandung',
-            ]);
-
-            // 3. Define Permissions based on menu domains with descriptions
+            // 2. Define Permissions based on menu domains with descriptions
             $permissions = [
+
                 // Master Data - Stores
                 'stores.view' => 'Melihat daftar dan detail cabang bengkel / toko',
                 'stores.create' => 'Menambahkan toko / cabang bengkel baru',
@@ -212,9 +187,53 @@ class UserRolePermissionSeeder extends Seeder
                 $perm->update(['description' => $description]);
             }
 
-            // 4. Create Roles and Assign Permissions
+            // 3. Create Roles and Assign Permissions
             $roleOwner = Role::findOrCreate('owner', 'web');
             $roleOwner->syncPermissions(Permission::all());
+
+            $roleAdmin = Role::findOrCreate('admin', 'web');
+            $roleAdmin->syncPermissions([
+                // Master Data
+                'stores.view',
+                'partners.view', 'partners.create', 'partners.edit', 'partners.delete',
+                'partner-roles.view', 'partner-roles.create', 'partner-roles.edit', 'partner-roles.delete',
+                'discount-types.view', 'discount-types.create', 'discount-types.edit', 'discount-types.delete',
+                'brands.view', 'brands.create', 'brands.edit', 'brands.delete',
+                'units.view', 'units.create', 'units.edit', 'units.delete',
+                'payments.view', 'payments.create', 'payments.edit', 'payments.delete',
+                'cash-flow-categories.view', 'cash-flow-categories.create', 'cash-flow-categories.edit', 'cash-flow-categories.delete',
+                'cash-flows.view', 'cash-flows.create', 'cash-flows.edit', 'cash-flows.delete',
+
+                // Catalog & Products
+                'product-categories.view', 'product-categories.create', 'product-categories.edit', 'product-categories.delete',
+                'products.view', 'products.create', 'products.edit', 'products.delete',
+                'product-variants.view', 'product-variants.create', 'product-variants.edit', 'product-variants.delete',
+                'product-attributes.view', 'product-attributes.create', 'product-attributes.edit', 'product-attributes.delete',
+                'product-discounts.view', 'product-discounts.create', 'product-discounts.edit', 'product-discounts.delete',
+                'product-prices.view', 'product-prices.create', 'product-prices.edit', 'product-prices.delete',
+                'product-stocks.view', 'product-stocks.create', 'product-stocks.edit', 'product-stocks.delete',
+
+                // Warehouses, Stock & Purchases
+                'warehouses.view', 'warehouses.create', 'warehouses.edit', 'warehouses.delete',
+                'warehouse-locations.view', 'warehouse-locations.create', 'warehouse-locations.edit', 'warehouse-locations.delete',
+                'stock-adjustments.view', 'stock-adjustments.create', 'stock-adjustments.edit', 'stock-adjustments.delete', 'stock-adjustments.post', 'stock-adjustments.cancel',
+                'stock-transfers.view', 'stock-transfers.create', 'stock-transfers.edit', 'stock-transfers.delete', 'stock-transfers.post', 'stock-transfers.cancel',
+                'stock-opnames.view', 'stock-opnames.create', 'stock-opnames.edit', 'stock-opnames.delete', 'stock-opnames.post', 'stock-opnames.cancel',
+                'purchases.view', 'purchases.create', 'purchases.edit', 'purchases.delete',
+                'printers.view', 'printers.create', 'printers.edit', 'printers.delete',
+
+                // POS & Transactions
+                'pos.view', 'pos.create',
+                'transactions.view', 'transactions.create', 'transactions.edit', 'transactions.delete', 'transactions.print',
+
+                // Services & Work Orders
+                'services.view', 'services.create', 'services.edit', 'services.delete', 'services.display', 'services.status.update',
+                'work-orders.view', 'work-orders.create', 'work-orders.edit', 'work-orders.delete',
+
+                // Dashboard & Users
+                'dashboard.view',
+                'users.view', 'users.create', 'users.edit',
+            ]);
 
             $roleKasir = Role::findOrCreate('kasir', 'web');
             $roleKasir->syncPermissions([
@@ -227,18 +246,16 @@ class UserRolePermissionSeeder extends Seeder
                 'products.view',
                 'product-variants.view',
                 'product-stocks.view',
-                'stock-adjustments.view',
-                'stock-transfers.view',
-                'stock-opnames.view',
-                'stock-opnames.create',
                 'product-prices.view',
                 'product-discounts.view',
                 'payments.view',
                 'partners.view',
+                'partners.create',
                 'services.view',
                 'work-orders.view',
                 'cash-flows.view',
                 'cash-flows.create',
+                'printers.view',
             ]);
 
             $roleMekanik = Role::findOrCreate('mekanik', 'web');
@@ -255,67 +272,25 @@ class UserRolePermissionSeeder extends Seeder
                 'products.view',
                 'product-variants.view',
                 'product-stocks.view',
-                'stock-adjustments.view',
-                'stock-transfers.view',
+                'partners.view',
+                'partners.create',
                 'stock-opnames.view',
             ]);
 
-            // 5. Create 4 Users and Assign Roles
-            // User 1: Owner (Global / store_id = null)
+            // 4. Create Initial User: 1 User Owner (Global / Tanpa Toko Awal)
             $ownerUser = User::query()->firstOrCreate([
                 'email' => 'owner@viltpos.com',
             ], [
-                'name' => 'Owner POS / Bengkel',
+                'name' => 'Owner Bengkel',
                 'password' => bcrypt('password'),
                 'nik' => 'OWN-001',
-                'phone' => '081111111111',
-                'address' => 'Jl. Owner Utama No. 88',
+                'phone' => '081234567890',
+                'address' => 'Kantor Pusat',
                 'store_id' => null,
                 'active' => true,
             ]);
             $ownerUser->syncRoles([$roleOwner]);
-
-            // User 2: Kasir 1 (Bengkel Cabang Jakarta)
-            $kasir1User = User::query()->firstOrCreate([
-                'email' => 'kasir1@viltpos.com',
-            ], [
-                'name' => 'Kasir Cabang Jakarta',
-                'password' => bcrypt('password'),
-                'nik' => 'KAS-001',
-                'phone' => '082222222222',
-                'address' => 'Jl. Sudirman No. 10',
-                'store_id' => $storeJakarta->id,
-                'active' => true,
-            ]);
-            $kasir1User->syncRoles([$roleKasir]);
-
-            // User 3: Kasir 2 (Bengkel Cabang Bandung)
-            $kasir2User = User::query()->firstOrCreate([
-                'email' => 'kasir2@viltpos.com',
-            ], [
-                'name' => 'Kasir Cabang Bandung',
-                'password' => bcrypt('password'),
-                'nik' => 'KAS-002',
-                'phone' => '083333333333',
-                'address' => 'Jl. Asia Afrika No. 20',
-                'store_id' => $storeBandung->id,
-                'active' => true,
-            ]);
-            $kasir2User->syncRoles([$roleKasir]);
-
-            // User 4: Mekanik (Bengkel Cabang Jakarta)
-            $mekanikUser = User::query()->firstOrCreate([
-                'email' => 'mekanik@viltpos.com',
-            ], [
-                'name' => 'Mekanik Senior',
-                'password' => bcrypt('password'),
-                'nik' => 'MEK-001',
-                'phone' => '084444444444',
-                'address' => 'Jl. Sudirman No. 12',
-                'store_id' => $storeJakarta->id,
-                'active' => true,
-            ]);
-            $mekanikUser->syncRoles([$roleMekanik]);
         });
+
     }
 }

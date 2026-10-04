@@ -31,6 +31,28 @@ if not exist ".env" (
     copy .env.docker.example .env >nul
 )
 
+:: Pastikan konfigurasi Reverb ada di .env jika update dari versi lama
+findstr /C:"REVERB_APP_KEY" .env >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [*] Menambahkan konfigurasi Laravel Reverb ke .env...
+    (
+        echo.
+        echo BROADCAST_CONNECTION=reverb
+        echo REVERB_APP_ID=751073
+        echo REVERB_APP_KEY=a2kz89zdynwffpznlejr
+        echo REVERB_APP_SECRET=4ozv52uqxhod7tykme8y
+        echo REVERB_HOST="localhost"
+        echo REVERB_PORT=8080
+        echo REVERB_SCHEME=http
+        echo REVERB_INTERNAL_HOST="reverb"
+        echo REVERB_INTERNAL_PORT=8080
+        echo VITE_REVERB_APP_KEY="a2kz89zdynwffpznlejr"
+        echo VITE_REVERB_HOST="localhost"
+        echo VITE_REVERB_PORT="8080"
+        echo VITE_REVERB_SCHEME="http"
+    ) >> .env
+)
+
 if not exist "database" mkdir database
 if not exist "database\database.sqlite" (
     echo [*] Membuat file database SQLite baru...
@@ -54,8 +76,8 @@ echo.
 
 :: 4. Cek apakah perlu inisialisasi awal (vendor / app key / migration)
 echo [4/5] Memeriksa dependensi aplikasi...
-if not exist "vendor" (
-    echo [*] Menjalankan composer install di dalam container (pertama kali saja)...
+if not exist "vendor\laravel\reverb" (
+    echo [*] Menginstal dependensi Composer (termasuk Laravel Reverb)...
     docker compose exec -T app composer install --optimize-autoloader
 )
 
@@ -68,12 +90,16 @@ if %errorlevel% neq 0 (
 echo [*] Memastikan migrasi database terpasang...
 docker compose exec -T app php artisan migrate --force
 
-if not exist "public\build" (
-    echo [*] Mengompilasi aset frontend (npm run build)...
+if not exist "node_modules\laravel-echo" (
+    echo [*] Mengompilasi dependensi frontend (npm install & build)...
     docker compose run --rm node npm install
+    docker compose run --rm node npm run build
+) else if not exist "public\build" (
+    echo [*] Mengompilasi aset frontend (npm run build)...
     docker compose run --rm node npm run build
 )
 echo [OK] Aplikasi siap digunakan.
+
 echo.
 
 :: 5. Mengambil Link Cloudflare Tunnel
