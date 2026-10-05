@@ -1,10 +1,11 @@
 @echo off
 setlocal enabledelayedexpansion
+cd /d "%~dp0"
 title POS Bengkel Server - Cloudflare Tunnel
 color 0B
 
 echo ================================================================
-echo           SISTEM POS BENGKEL - SERVER LOCAL & TUNNEL            
+echo           SISTEM POS BENGKEL - SERVER LOCAL DAN TUNNEL            
 echo ================================================================
 echo.
 
@@ -25,7 +26,7 @@ echo [OK] Docker Desktop aktif.
 echo.
 
 :: 2. Cek file .env dan database sqlite
-echo [2/5] Memeriksa konfigurasi awal (.env & database)...
+echo [2/5] Memeriksa konfigurasi awal (.env dan database)...
 if not exist ".env" (
     echo [*] File .env tidak ditemukan. Membuat dari .env.docker.example...
     copy .env.docker.example .env >nul
@@ -53,11 +54,14 @@ if %errorlevel% neq 0 (
     ) >> .env
 )
 
+set "IS_NEW_DB=0"
 if not exist "database" mkdir database
 if not exist "database\database.sqlite" (
     echo [*] Membuat file database SQLite baru...
     type nul > database\database.sqlite
+    set "IS_NEW_DB=1"
 )
+for %%F in ("database\database.sqlite") do if %%~zF equ 0 set "IS_NEW_DB=1"
 echo [OK] Konfigurasi siap.
 echo.
 
@@ -76,8 +80,8 @@ echo.
 
 :: 4. Cek apakah perlu inisialisasi awal (vendor / app key / migration)
 echo [4/5] Memeriksa dependensi aplikasi...
-if not exist "vendor\laravel\reverb" (
-    echo [*] Menginstal dependensi Composer (termasuk Laravel Reverb)...
+if not exist "vendor\pusher\pusher-php-server" (
+    echo [*] Menginstal dependensi Composer - Laravel Reverb dan Pusher...
     docker compose exec -T app composer install --optimize-autoloader
 )
 
@@ -87,15 +91,20 @@ if %errorlevel% neq 0 (
     docker compose exec -T app php artisan key:generate --force
 )
 
-echo [*] Memastikan migrasi database terpasang...
-docker compose exec -T app php artisan migrate --force
+if "!IS_NEW_DB!"=="1" (
+    echo [*] Menyiapkan database baru dan data awal - migrate dan seed DatabaseSeeder...
+    docker compose exec -T app php artisan migrate --force --seed --seeder=DatabaseSeeder
+) else (
+    echo [*] Memastikan migrasi database terpasang...
+    docker compose exec -T app php artisan migrate --force
+)
 
 if not exist "node_modules\laravel-echo" (
-    echo [*] Mengompilasi dependensi frontend (npm install & build)...
+    echo [*] Mengompilasi dependensi frontend - npm install dan build...
     docker compose run --rm node npm install
     docker compose run --rm node npm run build
 ) else if not exist "public\build" (
-    echo [*] Mengompilasi aset frontend (npm run build)...
+    echo [*] Mengompilasi aset frontend - npm run build...
     docker compose run --rm node npm run build
 )
 echo [OK] Aplikasi siap digunakan.
@@ -106,7 +115,7 @@ echo.
 echo [5/5] Menghubungkan ke Cloudflare Tunnel...
 echo      (Mohon tunggu 5-10 detik untuk mendapatkan link publik...)
 
-for /f "delims=" %%I in ('powershell -NoProfile -Command "$url = ''; for ($i=0; $i -lt 30; $i++) { $logs = docker compose logs tunnel 2>&1; if ($logs -match '(https://[a-zA-Z0-9-]+\.trycloudflare\.com)') { $url = $matches[1]; break }; Start-Sleep -Seconds 1 }; if ($url) { Write-Output $url } else { Write-Output 'TIMEOUT' }"') do (
+for /f "delims=" %%I in ('powershell -NoProfile -Command "$url = ''; for ($i=0; $i -lt 30; $i++) { $line = (docker compose logs tunnel 2>&1) -match 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' | Select-Object -Last 1; if ($line -and $line -match '(https://[a-zA-Z0-9-]+\.trycloudflare\.com)') { $url = $matches[1]; break }; Start-Sleep -Seconds 1 }; if ($url) { Write-Output $url } else { Write-Output 'TIMEOUT' }"') do (
     set "TUNNEL_URL=%%I"
 )
 
@@ -123,9 +132,9 @@ if "!TUNNEL_URL!"=="TIMEOUT" (
 ) else (
     echo       LINK: !TUNNEL_URL!
     echo.
-    echo       (Link sudah otomatis disalin ke Clipboard!
-    echo        Tinggal Paste / Ctrl+V ke WhatsApp bengkel cabang)
-    echo !TUNNEL_URL! | clip
+    echo       Link sudah otomatis disalin ke Clipboard!
+    echo       Tinggal Paste / Ctrl+V ke WhatsApp bengkel cabang
+    <nul set /p="!TUNNEL_URL!" | clip 2>nul
 )
 echo.
 echo   [+] AKSES LOKAL (DARI LAPTOP SERVER INI):
