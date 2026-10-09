@@ -2,10 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProductStock extends BaseModel
+class ProductStock extends Model
 {
+    use HasUuids;
+
+    protected $fillable = [
+        'product_variant_id',
+        'warehouse_id',
+        'warehouse_location_id',
+        'quantity',
+        'is_hidden',
+        'minimum_stock',
+    ];
+
     protected function casts(): array
     {
         return [

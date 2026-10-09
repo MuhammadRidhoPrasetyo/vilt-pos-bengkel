@@ -2,12 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ServiceOrderItem extends BaseModel
+class ServiceOrderItem extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'service_order_id',
+        'service_order_unit_id',
+        'mechanic_id',
+        'product_variant_id',
+        'item_type',
+        'description',
+        'quantity',
+        'unit_price',
+        'line_total',
+        'assigned_at',
+    ];
 
     protected function casts(): array
     {

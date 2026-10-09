@@ -25,6 +25,34 @@ if %errorlevel% neq 0 (
 echo [OK] Docker Desktop aktif.
 echo.
 
+:: Pilihan Engine Server
+echo ================================================================
+echo                     PILIH SERVER ENGINE                         
+echo ================================================================
+echo.
+echo   [1] FrankenPHP (Rekomendasi - Super Cepat, Octane In-Memory)
+echo       -> Loading instan (<20ms), tanpa bottleneck I/O disk Windows.
+echo.
+echo   [2] PHP-FPM + Nginx (Standar Kompatibilitas)
+echo       -> Arsitektur klasik Laravel + Nginx reverse proxy.
+echo.
+echo ================================================================
+set "SERVER_CHOICE=1"
+set /p SERVER_CHOICE="Pilih opsi engine [1/2] (Tekan Enter untuk FrankenPHP): "
+
+if "%SERVER_CHOICE%"=="2" (
+    set "COMPOSE_PROFILE=fpm"
+    set "PHP_SERVICE=app"
+    set "ENGINE_NAME=PHP-FPM + Nginx"
+) else (
+    set "COMPOSE_PROFILE=frankenphp"
+    set "PHP_SERVICE=frankenphp"
+    set "ENGINE_NAME=FrankenPHP (Laravel Octane)"
+)
+echo.
+echo [*] Menggunakan engine: !ENGINE_NAME!
+echo.
+
 :: 2. Cek file .env dan database sqlite
 echo [2/5] Memeriksa konfigurasi awal (.env dan database)...
 if not exist ".env" (
@@ -54,6 +82,13 @@ if %errorlevel% neq 0 (
     ) >> .env
 )
 
+:: Pastikan konfigurasi OCTANE_SERVER ada di .env jika menggunakan FrankenPHP
+findstr /C:"OCTANE_SERVER" .env >nul 2>&1
+if %errorlevel% neq 0 (
+    echo. >> .env
+    echo OCTANE_SERVER=frankenphp >> .env
+)
+
 set "IS_NEW_DB=0"
 if not exist "database" mkdir database
 if not exist "database\database.sqlite" (
@@ -65,9 +100,12 @@ for %%F in ("database\database.sqlite") do if %%~zF equ 0 set "IS_NEW_DB=1"
 echo [OK] Konfigurasi siap.
 echo.
 
+:: Menghentikan container web lama agar tidak bentrok port jika berganti engine
+docker compose --profile frankenphp --profile fpm stop frankenphp app nginx >nul 2>&1
+
 :: 3. Menjalankan Docker Compose
-echo [3/5] Menyalakan container (PHP, Nginx, Queue, Reverb, Tunnel)...
-docker compose up -d
+echo [3/5] Menyalakan container (!ENGINE_NAME!, Queue, Reverb, Tunnel)...
+docker compose --profile !COMPOSE_PROFILE! up -d
 
 if %errorlevel% neq 0 (
     color 0C
@@ -82,21 +120,21 @@ echo.
 echo [4/5] Memeriksa dependensi aplikasi...
 if not exist "vendor\pusher\pusher-php-server" (
     echo [*] Menginstal dependensi Composer - Laravel Reverb dan Pusher...
-    docker compose exec -T app composer install --optimize-autoloader
+    docker compose exec -T !PHP_SERVICE! composer install --optimize-autoloader
 )
 
 findstr /C:"APP_KEY=base64:" .env >nul 2>&1
 if %errorlevel% neq 0 (
     echo [*] Mengenerate APP_KEY baru...
-    docker compose exec -T app php artisan key:generate --force
+    docker compose exec -T !PHP_SERVICE! php artisan key:generate --force
 )
 
 if "!IS_NEW_DB!"=="1" (
     echo [*] Menyiapkan database baru dan data awal - migrate dan seed DatabaseSeeder...
-    docker compose exec -T app php artisan migrate --force --seed --seeder=DatabaseSeeder
+    docker compose exec -T !PHP_SERVICE! php artisan migrate --force --seed --seeder=DatabaseSeeder
 ) else (
     echo [*] Memastikan migrasi database terpasang...
-    docker compose exec -T app php artisan migrate --force
+    docker compose exec -T !PHP_SERVICE! php artisan migrate --force
 )
 
 if not exist "node_modules\laravel-echo" (
@@ -125,6 +163,8 @@ echo ================================================================
 echo           SISTEM POS BENGKEL BERHASIL DIJALANKAN!               
 echo ================================================================
 echo.
+echo   ENGINE AKTIF : !ENGINE_NAME!
+echo.
 echo   [+] AKSES DARI BENGKEL CABANG LAIN (INTERNET / HP / LAPTOP):
 if "!TUNNEL_URL!"=="TIMEOUT" (
     echo       [!] Link otomatis belum terbaca atau menggunakan domain token custom.
@@ -145,11 +185,12 @@ echo.
 echo  PILIHAN MENU:
 echo    [1] Buka aplikasi di Browser sekarang
 echo    [2] Lihat log Cloudflare Tunnel
-echo    [3] Hentikan Server (Stop Docker)
-echo    [4] Minimize / Tutup jendela ini (server tetap berjalan)
+echo    [3] Lihat log Server (!PHP_SERVICE!)
+echo    [4] Hentikan Server (Stop Docker)
+echo    [5] Minimize / Tutup jendela ini (server tetap berjalan)
 echo.
 :MENU
-set /p MENU_CHOICE="Pilih opsi [1/2/3/4]: "
+set /p MENU_CHOICE="Pilih opsi [1/2/3/4/5]: "
 
 if "%MENU_CHOICE%"=="1" (
     if not "!TUNNEL_URL!"=="TIMEOUT" (
@@ -164,13 +205,17 @@ if "%MENU_CHOICE%"=="2" (
     goto MENU
 )
 if "%MENU_CHOICE%"=="3" (
+    docker compose logs -f !PHP_SERVICE!
+    goto MENU
+)
+if "%MENU_CHOICE%"=="4" (
     echo Mematikan server...
-    docker compose down
+    docker compose --profile frankenphp --profile fpm down
     echo Server berhasil dimatikan.
     pause
     exit /b 0
 )
-if "%MENU_CHOICE%"=="4" (
+if "%MENU_CHOICE%"=="5" (
     exit /b 0
 )
 

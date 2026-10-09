@@ -2,13 +2,37 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ServiceOrder extends BaseModel
+class ServiceOrder extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'number',
+        'store_id',
+        'customer_id',
+        'status',
+        'checkin_at',
+        'completed_at',
+        'general_complaint',
+        'estimated_total',
+        'transaction_id',
+        'customer_name',
+        'customer_phone',
+        'vehicle_id',
+        'plate_number',
+        'vehicle_brand',
+        'vehicle_model',
+        'year',
+        'color',
+        'odometer',
+        'diagnosis',
+    ];
 
     protected function casts(): array
     {

@@ -2,13 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Warehouse extends BaseModel
+class Warehouse extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'store_id',
+        'code',
+        'name',
+        'description',
+        'phone',
+        'is_active',
+    ];
 
     protected function casts(): array
     {

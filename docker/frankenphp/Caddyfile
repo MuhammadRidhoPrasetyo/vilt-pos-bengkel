@@ -1,0 +1,18 @@
+{
+    frankenphp {
+        worker /var/www/html/public/frankenphp-worker.php 4
+    }
+    order php_server before file_server
+}
+
+:80 {
+    root * /var/www/html/public
+    encode zstd gzip
+
+    # Proxy WebSocket ke Laravel Reverb container
+    @reverb path /app/*
+    reverse_proxy @reverb reverb:8080
+
+    # FrankenPHP Laravel Octane PHP Server
+    php_server
+}

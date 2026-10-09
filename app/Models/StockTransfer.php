@@ -2,14 +2,28 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class StockTransfer extends BaseModel
+class StockTransfer extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'from_store_id',
+        'to_store_id',
+        'status',
+        'reference_number',
+        'occurred_at',
+        'created_by',
+        'posted_by',
+        'posted_at',
+        'note',
+    ];
 
     protected function casts(): array
     {

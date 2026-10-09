@@ -2,10 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProductPriceHistory extends BaseModel
+class ProductPriceHistory extends Model
 {
+    use HasUuids;
+
+    protected $fillable = [
+        'product_variant_id',
+        'store_id',
+        'product_price_id',
+        'date',
+        'purchase_price',
+        'selling_price',
+    ];
+
     protected function casts(): array
     {
         return [

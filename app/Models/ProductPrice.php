@@ -2,11 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ProductPrice extends BaseModel
+class ProductPrice extends Model
 {
+    use HasUuids;
+
+    protected $fillable = [
+        'product_variant_id',
+        'store_id',
+        'price_type',
+        'purchase_price',
+        'markup',
+        'markup_type',
+        'selling_price',
+        'is_active',
+    ];
+
     protected function casts(): array
     {
         return [

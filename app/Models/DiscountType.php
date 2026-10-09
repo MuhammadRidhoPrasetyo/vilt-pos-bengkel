@@ -3,8 +3,16 @@
 namespace App\Models;
 
 use App\Models\Traits\HasStoreOrGlobalScope;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 
-class DiscountType extends BaseModel
+class DiscountType extends Model
 {
-    use HasStoreOrGlobalScope;
+    use HasStoreOrGlobalScope, HasUuids;
+
+    protected $fillable = [
+        'store_id',
+        'name',
+        'description',
+    ];
 }

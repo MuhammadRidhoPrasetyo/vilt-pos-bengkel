@@ -2,11 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class InventoryMovement extends BaseModel
+class InventoryMovement extends Model
 {
+    use HasUuids;
+
+    protected $fillable = [
+        'warehouse_id',
+        'product_variant_id',
+        'inventory_batch_id',
+        'reference_type',
+        'reference_id',
+        'type',
+        'quantity',
+        'balance_after',
+    ];
+
     protected function casts(): array
     {
         return [

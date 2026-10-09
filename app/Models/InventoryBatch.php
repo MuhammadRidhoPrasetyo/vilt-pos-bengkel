@@ -2,10 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class InventoryBatch extends BaseModel
+class InventoryBatch extends Model
 {
+    use HasUuids;
+
+    protected $fillable = [
+        'product_variant_id',
+        'warehouse_id',
+        'warehouse_location_id',
+        'purchase_item_id',
+        'initial_quantity',
+        'current_quantity',
+        'unit_cost',
+        'received_at',
+    ];
+
     protected function casts(): array
     {
         return [

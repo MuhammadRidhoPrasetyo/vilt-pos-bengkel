@@ -2,14 +2,32 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class StockOpname extends BaseModel
+class StockOpname extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'store_id',
+        'warehouse_id',
+        'opname_number',
+        'status',
+        'occurred_at',
+        'total_system_qty',
+        'total_physical_qty',
+        'total_difference_qty',
+        'total_difference_value',
+        'notes',
+        'created_by',
+        'posted_by',
+        'posted_at',
+    ];
 
     protected function casts(): array
     {

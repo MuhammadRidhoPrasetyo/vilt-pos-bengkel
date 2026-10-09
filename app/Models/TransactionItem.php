@@ -2,13 +2,38 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class TransactionItem extends BaseModel
+class TransactionItem extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'transaction_id',
+        'product_variant_id',
+        'store_id',
+        'product_stock_id',
+        'discount_type_id',
+        'quantity',
+        'unit_price',
+        'item_discount_mode',
+        'item_discount_value',
+        'item_discount_amount',
+        'final_unit_price',
+        'line_subtotal',
+        'line_total',
+        'unit_cost',
+        'line_cost_total',
+        'line_profit',
+        'price_edited',
+        'pricing_mode',
+        'item_type',
+        'description',
+    ];
 
     protected function casts(): array
     {

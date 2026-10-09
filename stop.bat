@@ -7,9 +7,9 @@ echo           MENGHENTIKAN SERVER POS BENGKEL
 echo ================================================================
 echo.
 echo Sedang mematikan seluruh container Docker...
-docker compose down
+docker compose --profile frankenphp --profile fpm down
 echo.
-echo [OK] Seluruh container (PHP, Nginx, Queue, Tunnel) telah dihentikan.
+echo [OK] Seluruh container (FrankenPHP, PHP-FPM, Nginx, Queue, Tunnel) telah dihentikan.
 echo Data transaksi aman tersimpan di database/database.sqlite.
 echo.
 pause

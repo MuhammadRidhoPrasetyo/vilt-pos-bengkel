@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute as EloquentAttribute;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,10 +14,22 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class ProductVariant extends BaseModel implements HasMedia
+class ProductVariant extends Model implements HasMedia
 {
+    use HasUuids;
     use InteractsWithMedia;
     use SoftDeletes;
+
+    protected $fillable = [
+        'product_id',
+        'sku',
+        'barcode',
+        'name_suffix',
+        'receipt_name',
+        'default_purchase_price',
+        'default_selling_price',
+        'is_active',
+    ];
 
     public function registerMediaCollections(): void
     {

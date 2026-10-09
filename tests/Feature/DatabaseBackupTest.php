@@ -82,3 +82,80 @@ test('successfully imports valid sqlite database file', function () {
         config(['database.connections.sqlite.database' => $originalDb]);
     }
 });
+
+test('successfully processes chunked upload using internal storage', function () {
+    $user = User::factory()->create();
+
+    // Create a real valid SQLite database
+    $validDbPath = storage_path('app/test-chunk-source.sqlite');
+    if (File::exists($validDbPath)) {
+        File::delete($validDbPath);
+    }
+
+    $pdo = new PDO('sqlite:'.$validDbPath);
+    $pdo->exec('CREATE TABLE chunk_test (id INTEGER PRIMARY KEY, note TEXT)');
+    $pdo->exec("INSERT INTO chunk_test (note) VALUES ('Chunked Works!')");
+    unset($pdo);
+
+    $sqliteBinary = File::get($validDbPath);
+    File::delete($validDbPath);
+
+    // Split into 2 chunks
+    $half = (int) ceil(strlen($sqliteBinary) / 2);
+    $chunk1 = substr($sqliteBinary, 0, $half);
+    $chunk2 = substr($sqliteBinary, $half);
+
+    $uploadId = 'test_upload_'.uniqid();
+
+    // Send chunk 0
+    $response1 = $this->actingAs($user)
+        ->postJson(route('settings.database.upload-chunk'), [
+            'upload_id' => $uploadId,
+            'chunk_index' => 0,
+            'total_chunks' => 2,
+            'file_name' => 'database.sqlite',
+            'chunk_data' => base64_encode($chunk1),
+        ]);
+
+    $response1->assertOk()
+        ->assertJson([
+            'success' => true,
+            'is_completed' => false,
+            'progress' => 50,
+        ]);
+
+    // Mock target database
+    $originalDb = config('database.connections.sqlite.database');
+    $mockTargetDb = storage_path('app/mock-target-chunk-db.sqlite');
+    if (! File::exists($mockTargetDb)) {
+        $pdoMock = new PDO('sqlite:'.$mockTargetDb);
+        $pdoMock->exec('CREATE TABLE old_chunk_table (id INT)');
+        unset($pdoMock);
+    }
+
+    try {
+        config(['database.connections.sqlite.database' => $mockTargetDb]);
+
+        // Send chunk 1 (final)
+        $response2 = $this->actingAs($user)
+            ->postJson(route('settings.database.upload-chunk'), [
+                'upload_id' => $uploadId,
+                'chunk_index' => 1,
+                'total_chunks' => 2,
+                'file_name' => 'database.sqlite',
+                'chunk_data' => base64_encode($chunk2),
+            ]);
+
+        $response2->assertOk()
+            ->assertJson([
+                'success' => true,
+                'is_completed' => true,
+                'progress' => 100,
+            ]);
+    } finally {
+        config(['database.connections.sqlite.database' => $originalDb]);
+        if (File::exists($mockTargetDb)) {
+            File::delete($mockTargetDb);
+        }
+    }
+});

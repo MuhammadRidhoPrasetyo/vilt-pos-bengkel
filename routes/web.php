@@ -91,4 +91,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/database', [DatabaseBackupController::class, 'index'])->name('settings.database.index');
     Route::get('settings/database/export', [DatabaseBackupController::class, 'export'])->name('settings.database.export');
     Route::post('settings/database/import', [DatabaseBackupController::class, 'import'])->name('settings.database.import');
+    Route::post('settings/database/upload-chunk', [DatabaseBackupController::class, 'uploadChunk'])->name('settings.database.upload-chunk');
+    Route::post('settings/database/restore-backup', [DatabaseBackupController::class, 'restoreBackup'])->name('settings.database.restore-backup');
+    Route::get('settings/database/download-backup/{fileName}', [DatabaseBackupController::class, 'downloadBackup'])->name('settings.database.download-backup');
+    Route::delete('settings/database/delete-backup/{fileName}', [DatabaseBackupController::class, 'deleteBackup'])->name('settings.database.delete-backup');
 });

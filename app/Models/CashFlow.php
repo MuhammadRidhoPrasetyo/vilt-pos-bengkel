@@ -2,13 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class CashFlow extends BaseModel
+class CashFlow extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'store_id',
+        'user_id',
+        'category_id',
+        'amount',
+        'date',
+        'type',
+        'description',
+        'reference_type',
+        'reference_id',
+    ];
 
     protected function casts(): array
     {

@@ -2,14 +2,30 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Purchase extends BaseModel
+class Purchase extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'store_id',
+        'supplier_id',
+        'created_by',
+        'received_by',
+        'number',
+        'invoice_number',
+        'purchase_date',
+        'discount_type',
+        'discount_value',
+        'price',
+        'notes',
+    ];
 
     protected function casts(): array
     {

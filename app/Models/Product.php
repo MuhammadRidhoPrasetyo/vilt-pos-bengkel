@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute as EloquentAttribute;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,10 +13,23 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Product extends BaseModel implements HasMedia
+class Product extends Model implements HasMedia
 {
+    use HasUuids;
     use InteractsWithMedia;
     use SoftDeletes;
+
+    protected $fillable = [
+        'product_category_id',
+        'brand_id',
+        'unit_id',
+        'name',
+        'receipt_name',
+        'item_type',
+        'has_variants',
+        'description',
+        'is_active',
+    ];
 
     protected function casts(): array
     {

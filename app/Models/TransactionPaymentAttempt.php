@@ -2,12 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class TransactionPaymentAttempt extends BaseModel
+class TransactionPaymentAttempt extends Model
 {
-    use SoftDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = [
+        'transaction_id',
+        'user_id',
+        'payment_id',
+        'amount',
+        'amount_given',
+        'change',
+        'paid_at',
+        'metadata',
+    ];
 
     protected function casts(): array
     {

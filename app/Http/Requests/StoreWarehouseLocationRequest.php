@@ -28,7 +28,10 @@ class StoreWarehouseLocationRequest extends FormRequest
         return [
             'warehouse_id' => ['required', 'uuid', Rule::exists('warehouses', 'id')],
             'parent_id' => ['nullable', 'uuid', Rule::exists('warehouse_locations', 'id')],
-            'type' => ['required', Rule::in(['zone', 'rack', 'shelf', 'bin'])],
+            'type' => ['required', Rule::in([
+                'zone', 'rack', 'shelf', 'bin', 'showcase', 'hanging', 'floor', 'cabinet', 'staging',
+                'zona', 'rak', 'ambalan', 'laci', 'etalase', 'gantung', 'lantai', 'lemari', 'transit',
+            ])],
             'code' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
