@@ -18,6 +18,10 @@ const props = defineProps({
     summary: Object,
     filters: Object,
     options: Object,
+    canFilterStore: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const parseDateString = (str) => {
@@ -37,7 +41,7 @@ const formatDateString = (calDate) => {
 const search = ref(props.filters?.search || '');
 const typeFilter = ref(props.filters?.type || 'all');
 const paymentStatusFilter = ref(props.filters?.payment_status || 'all');
-const storeFilter = ref(props.filters?.store_id || 'all');
+const storeFilter = ref(props.filters?.store_id || (props.canFilterStore ? 'all' : (props.options?.stores?.[0]?.value || '')));
 const startDate = ref(props.filters?.start_date || '');
 const endDate = ref(props.filters?.end_date || '');
 
@@ -57,10 +61,15 @@ const deleteModalOpen = ref(false);
 const itemToDelete = ref(null);
 const deleting = ref(false);
 
-const storeOptions = computed(() => [
-    { label: 'Semua Cabang', value: 'all' },
-    ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) })),
-]);
+const storeOptions = computed(() => {
+    if (props.canFilterStore) {
+        return [
+            { label: 'Semua Cabang', value: 'all' },
+            ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) })),
+        ];
+    }
+    return (props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) }));
+});
 
 const typeOptions = [
     { label: 'Semua Tipe', value: 'all' },
@@ -94,7 +103,7 @@ const applyFilters = () => {
         search: search.value || undefined,
         type: typeFilter.value !== 'all' ? typeFilter.value : undefined,
         payment_status: paymentStatusFilter.value !== 'all' ? paymentStatusFilter.value : undefined,
-        store_id: storeFilter.value !== 'all' ? storeFilter.value : undefined,
+        store_id: (props.canFilterStore ? (storeFilter.value !== 'all' ? storeFilter.value : undefined) : storeFilter.value) || undefined,
         start_date: startDate.value || undefined,
         end_date: endDate.value || undefined,
     }, { preserveState: true, replace: true });
@@ -187,7 +196,7 @@ const columns = [
 <template>
     <div class="space-y-4">
         <!-- Summary Cards -->
-        <div class="grid gap-3 sm:grid-cols-5">
+        <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             <UCard :ui="{ body: 'p-3.5' }">
                 <div class="flex items-center justify-between">
                     <div>
@@ -200,7 +209,7 @@ const columns = [
                 </div>
             </UCard>
 
-            <UCard :ui="{ body: 'p-3.5' }">
+            <UCard v-if="can('transactions.summary.view')" :ui="{ body: 'p-3.5' }">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-medium text-muted">Total Omzet</p>
@@ -212,7 +221,7 @@ const columns = [
                 </div>
             </UCard>
 
-            <UCard :ui="{ body: 'p-3.5' }">
+            <UCard v-if="can('transactions.profit.view')" :ui="{ body: 'p-3.5' }">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-medium text-muted">Total Profit (Laba)</p>
@@ -286,6 +295,7 @@ const columns = [
                     <USelect
                         v-model="storeFilter"
                         :items="storeOptions"
+                        :disabled="!canFilterStore"
                         class="sm:w-40"
                         :ui="{ trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
                     />

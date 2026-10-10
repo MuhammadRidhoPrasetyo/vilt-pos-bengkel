@@ -18,9 +18,11 @@ use App\Http\Controllers\ProductDiscountController;
 use App\Http\Controllers\ProductPriceController;
 use App\Http\Controllers\ProductStockController;
 use App\Http\Controllers\ProductVariantController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceOrderController;
+use App\Http\Controllers\StaffPerformanceReportController;
 use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\StockTransferController;
@@ -86,6 +88,22 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('roles', RoleController::class);
     Route::resource('permissions', PermissionController::class);
     Route::resource('users', UserController::class);
+
+    // Profile Routes
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+
+    // Reports Routes
+    Route::get('reports/staff-performance', [StaffPerformanceReportController::class, 'index'])
+        ->middleware('can:reports.staff.view')
+        ->name('reports.staff-performance.index');
+    Route::get('reports/staff-performance/cashier/{user}', [StaffPerformanceReportController::class, 'cashierDetails'])
+        ->middleware('can:reports.staff.view')
+        ->name('reports.staff-performance.cashier-details');
+    Route::get('reports/staff-performance/mechanic/{user}', [StaffPerformanceReportController::class, 'mechanicDetails'])
+        ->middleware('can:reports.staff.view')
+        ->name('reports.staff-performance.mechanic-details');
 
     // Database Backup & Restore Routes
     Route::get('settings/database', [DatabaseBackupController::class, 'index'])->name('settings.database.index');

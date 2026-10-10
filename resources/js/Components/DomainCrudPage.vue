@@ -33,6 +33,7 @@ const UBadge = resolveComponent('UBadge');
 
 const fields = computed(() => props.config?.fields || []);
 const tableFields = computed(() => fields.value.filter((field) => field.table));
+const formFields = computed(() => fields.value.filter((field) => field.form !== false));
 const selectedRowsCount = computed(() => Object.keys(rowSelection.value).length);
 
 const displayColumnItems = computed(() => [
@@ -111,7 +112,7 @@ const displayValue = (record, field) => {
 const initialForm = () => {
     const defaults = props.config?.defaults || {};
 
-    const values = fields.value.reduce((acc, field) => {
+    const values = formFields.value.reduce((acc, field) => {
         if (field.type === 'checkbox') {
             acc[field.name] = defaults[field.name] ?? false;
         } else if (field.type === 'tags' || field.type === 'multiselect' || field.type === 'image_gallery') {
@@ -164,7 +165,7 @@ const openCreate = () => {
 const openEdit = (record) => {
     selectedRecord.value = record;
     form.clearErrors();
-    setFormValues(fields.value.reduce((values, field) => {
+    setFormValues(formFields.value.reduce((values, field) => {
         values[field.name] = extractFormValue(record, field);
 
         return values;
@@ -289,6 +290,19 @@ const columns = computed(() => [
                     color: row.original[field.name] ? 'success' : 'neutral',
                     variant: 'subtle',
                 }, () => row.original[field.name] ? 'Ya' : 'Tidak');
+            }
+
+            if (field.name === 'warehouse_locations') {
+                const locs = row.original[field.name];
+                if (Array.isArray(locs) && locs.length > 0) {
+                    return h('div', { class: 'flex flex-wrap gap-1' }, locs.map((loc) =>
+                        h(UBadge, {
+                            color: 'primary',
+                            variant: 'subtle',
+                            class: 'font-mono text-xs font-medium py-0.5 px-2 rounded-md',
+                        }, () => loc)
+                    ));
+                }
             }
 
             return h('span', {
@@ -438,7 +452,7 @@ watch(fields, () => {
 
                 <form v-else class="mt-5 grid gap-4 sm:grid-cols-2" @submit.prevent="submit">
                     <div
-                        v-for="field in fields"
+                        v-for="field in formFields"
                         :key="field.name"
                         class="grid gap-1 text-sm"
                         :class="field.type === 'textarea' || field.type === 'tags' || field.type === 'multiselect' || field.type === 'image_gallery' ? 'sm:col-span-2' : ''"

@@ -331,9 +331,9 @@ watch(modalType, (newType) => {
         </UDashboardToolbar>
 
         <!-- Dynamic Cash Flow & Activity Metric Cards -->
-        <div v-if="canAny(['cash-flows.view', 'pos.view', 'transactions.view', 'services.view', 'work-orders.view'])" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div v-if="canAny(['dashboard.finance.view', 'transactions.summary.view', 'services.view', 'work-orders.view'])" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <!-- Total Pemasukan -->
-            <div v-if="can('cash-flows.view')" class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-center justify-between shadow-xs">
+            <div v-if="can('dashboard.finance.view')" class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-center justify-between shadow-xs">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Total Pemasukan Kas</p>
                     <p class="mt-1 text-2xl font-extrabold font-mono text-emerald-300">
@@ -347,7 +347,7 @@ watch(modalType, (newType) => {
             </div>
 
             <!-- Total Pengeluaran -->
-            <div v-if="can('cash-flows.view')" class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 flex items-center justify-between shadow-xs">
+            <div v-if="can('dashboard.finance.view')" class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 flex items-center justify-between shadow-xs">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wider text-rose-400">Total Pengeluaran Kas</p>
                     <p class="mt-1 text-2xl font-extrabold font-mono text-rose-300">
@@ -361,7 +361,7 @@ watch(modalType, (newType) => {
             </div>
 
             <!-- Saldo Kas Bersih -->
-            <div v-if="can('cash-flows.view')" :class="[
+            <div v-if="can('dashboard.finance.view')" :class="[
                 'rounded-xl border p-4 flex items-center justify-between shadow-xs',
                 summary.net_balance >= 0 ? 'border-indigo-500/20 bg-indigo-500/5' : 'border-amber-500/20 bg-amber-500/5'
             ]">
@@ -378,7 +378,7 @@ watch(modalType, (newType) => {
             </div>
 
             <!-- Total Penjualan POS -->
-            <div v-if="canAny(['pos.view', 'transactions.view'])" class="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex items-center justify-between shadow-xs">
+            <div v-if="can('transactions.summary.view')" class="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex items-center justify-between shadow-xs">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wider text-blue-400">Total Transaksi POS</p>
                     <p class="mt-1 text-2xl font-extrabold font-mono text-blue-300">

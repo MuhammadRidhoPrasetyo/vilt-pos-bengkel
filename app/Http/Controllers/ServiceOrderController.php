@@ -31,6 +31,10 @@ class ServiceOrderController extends Controller
 
     public function index(Request $request): Response
     {
+        $user = $request->user();
+        $isOwner = (bool) $user?->hasRole('owner');
+        $canFilterStore = $isOwner;
+
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
         if ($status === 'all') {
@@ -40,6 +44,9 @@ class ServiceOrderController extends Controller
         if ($storeId === 'all') {
             $storeId = '';
         }
+        if (! $canFilterStore) {
+            $storeId = $user?->store_id ?? '';
+        }
         $startDate = $request->string('start_date')->toString();
         $endDate = $request->string('end_date')->toString();
 
@@ -48,14 +55,24 @@ class ServiceOrderController extends Controller
 
         $mechanics = $this->getScopedMechanics($request, $storeId);
 
+        $summaryQuery = ServiceOrder::query()->when($storeId, fn ($q) => $q->where('store_id', $storeId));
         $summary = [
-            'total_count' => ServiceOrder::count(),
-            'checkin_count' => ServiceOrder::where('status', 'checkin')->count(),
-            'in_progress_count' => ServiceOrder::where('status', 'in_progress')->count(),
-            'waiting_parts_count' => ServiceOrder::where('status', 'waiting_parts')->count(),
-            'ready_count' => ServiceOrder::where('status', 'ready')->count(),
-            'total_estimated' => (float) ServiceOrder::sum('estimated_total'),
+            'total_count' => (clone $summaryQuery)->count(),
+            'checkin_count' => (clone $summaryQuery)->where('status', 'checkin')->count(),
+            'in_progress_count' => (clone $summaryQuery)->where('status', 'in_progress')->count(),
+            'waiting_parts_count' => (clone $summaryQuery)->where('status', 'waiting_parts')->count(),
+            'ready_count' => (clone $summaryQuery)->where('status', 'ready')->count(),
+            'total_estimated' => (float) (clone $summaryQuery)->sum('estimated_total'),
         ];
+
+        if ($canFilterStore) {
+            $storeOptions = $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]);
+        } else {
+            $userStore = $user?->store;
+            $storeOptions = $userStore
+                ? collect([['label' => $userStore->name, 'value' => $userStore->id]])
+                : collect();
+        }
 
         return Inertia::render('services/index', [
             'serviceOrders' => ServiceOrderResource::collection($serviceOrders),
@@ -68,8 +85,9 @@ class ServiceOrderController extends Controller
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
+            'canFilterStore' => $canFilterStore,
             'options' => [
-                'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
+                'stores' => $storeOptions,
                 'mechanics' => UserResource::collection($mechanics),
             ],
         ]);
@@ -77,7 +95,9 @@ class ServiceOrderController extends Controller
 
     public function tvDisplay(Request $request): Response
     {
-        $storeId = $request->string('store_id')->toString();
+        $user = $request->user();
+        $isOwner = (bool) $user?->hasRole('owner');
+        $storeId = (! $isOwner && $user?->store_id) ? $user->store_id : $request->string('store_id')->toString();
         $activeOrders = $this->repository->getActiveOrders($storeId);
 
         $store = null;
@@ -108,6 +128,19 @@ class ServiceOrderController extends Controller
 
     public function create(Request $request): Response
     {
+        $user = $request->user();
+        $isOwner = (bool) $user?->hasRole('owner');
+        $canFilterStore = $isOwner;
+
+        if ($canFilterStore) {
+            $storeOptions = $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]);
+        } else {
+            $userStore = $user?->store;
+            $storeOptions = $userStore
+                ? collect([['label' => $userStore->name, 'value' => $userStore->id]])
+                : collect();
+        }
+
         $mechanics = $this->getScopedMechanics($request);
 
         $customers = Partner::query()
@@ -131,7 +164,7 @@ class ServiceOrderController extends Controller
 
         return Inertia::render('services/create', [
             'options' => [
-                'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
+                'stores' => $storeOptions,
                 'mechanics' => UserResource::collection($mechanics),
                 'customers' => $customers,
                 'categories' => $categories,
@@ -142,7 +175,20 @@ class ServiceOrderController extends Controller
 
     public function edit(Request $request, string $id): Response
     {
+        $user = $request->user();
+        $isOwner = (bool) $user?->hasRole('owner');
+        $canFilterStore = $isOwner;
+
         $serviceOrder = $this->repository->findWithRelations($id);
+
+        if ($canFilterStore) {
+            $storeOptions = $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]);
+        } else {
+            $orderStore = $serviceOrder->store ?? $user?->store;
+            $storeOptions = $orderStore
+                ? collect([['label' => $orderStore->name, 'value' => $orderStore->id]])
+                : collect();
+        }
 
         $mechanics = $this->getScopedMechanics($request, $serviceOrder->store_id);
 
@@ -168,7 +214,7 @@ class ServiceOrderController extends Controller
         return Inertia::render('services/edit', [
             'serviceOrder' => new ServiceOrderResource($serviceOrder),
             'options' => [
-                'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
+                'stores' => $storeOptions,
                 'mechanics' => UserResource::collection($mechanics),
                 'customers' => $customers,
                 'categories' => $categories,

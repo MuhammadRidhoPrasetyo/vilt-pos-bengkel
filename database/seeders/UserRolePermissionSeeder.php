@@ -142,6 +142,8 @@ class UserRolePermissionSeeder extends Seeder
                 'pos.view' => 'Mengakses menu kasir / POS',
                 'pos.create' => 'Melakukan transaksi penjualan kasir',
                 'transactions.view' => 'Melihat daftar dan riwayat transaksi penjualan / kasir',
+                'transactions.summary.view' => 'Melihat ringkasan total omzet dan statistik penjualan POS',
+                'transactions.profit.view' => 'Melihat total profit / laba kotor pada ringkasan transaksi',
                 'transactions.create' => 'Membuat transaksi kasir / penjualan baru',
                 'transactions.edit' => 'Mengubah data transaksi penjualan',
                 'transactions.delete' => 'Menghapus / membatalkan transaksi penjualan',
@@ -161,6 +163,11 @@ class UserRolePermissionSeeder extends Seeder
 
                 // Dashboard
                 'dashboard.view' => 'Mengakses dashboard & ringkasan operasional bengkel',
+                'dashboard.finance.view' => 'Melihat widget arus kas dan saldo keuangan toko pada Beranda',
+
+                // Reports
+                'reports.view' => 'Mengakses menu laporan dan analitik',
+                'reports.staff.view' => 'Melihat laporan kinerja dan produktivitas karyawan (kasir & mekanik)',
 
                 // Database Backup & System
                 'database-backup.view' => 'Melihat status backup dan halaman manajemen database',
@@ -224,7 +231,7 @@ class UserRolePermissionSeeder extends Seeder
 
                 // POS & Transactions
                 'pos.view', 'pos.create',
-                'transactions.view', 'transactions.create', 'transactions.edit', 'transactions.delete', 'transactions.print',
+                'transactions.view', 'transactions.summary.view', 'transactions.profit.view', 'transactions.create', 'transactions.edit', 'transactions.delete', 'transactions.print',
 
                 // Services & Work Orders
                 'services.view', 'services.create', 'services.edit', 'services.delete', 'services.display', 'services.status.update',
@@ -232,6 +239,9 @@ class UserRolePermissionSeeder extends Seeder
 
                 // Dashboard & Users
                 'dashboard.view',
+                'dashboard.finance.view',
+                'reports.view',
+                'reports.staff.view',
                 'users.view', 'users.create', 'users.edit',
             ]);
 

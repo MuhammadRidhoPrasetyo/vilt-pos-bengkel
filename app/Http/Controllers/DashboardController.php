@@ -25,22 +25,27 @@ class DashboardController extends Controller
             $stockStoreId = $user->store_id;
         }
 
-        $totalIncome = (float) CashFlow::where('type', 'income')->sum('amount');
-        $totalExpense = (float) CashFlow::where('type', 'expense')->sum('amount');
-        $netBalance = $totalIncome - $totalExpense;
+        $canViewFinance = $user->can('dashboard.finance.view');
+        $canViewPosSummary = $user->can('transactions.summary.view');
 
-        $recentCashFlows = CashFlow::query()
-            ->with(['store:id,name', 'user:id,name', 'category:id,name,type'])
-            ->latest('date')
-            ->latest('created_at')
-            ->take(10)
-            ->get();
+        $totalIncome = $canViewFinance ? (float) CashFlow::where('type', 'income')->sum('amount') : 0;
+        $totalExpense = $canViewFinance ? (float) CashFlow::where('type', 'expense')->sum('amount') : 0;
+        $netBalance = $canViewFinance ? ($totalIncome - $totalExpense) : 0;
+
+        $recentCashFlows = $user->can('cash-flows.view')
+            ? CashFlow::query()
+                ->with(['store:id,name', 'user:id,name', 'category:id,name,type'])
+                ->latest('date')
+                ->latest('created_at')
+                ->take(10)
+                ->get()
+            : collect();
 
         $stores = Store::orderBy('name')->get(['id', 'name']);
         $categories = CashFlowCategory::where('is_active', true)->orderBy('name')->get(['id', 'name', 'type']);
 
         $totalTransactions = Transaction::count();
-        $totalRevenue = (float) Transaction::where('status', 'completed')->sum('grand_total');
+        $totalRevenue = $canViewPosSummary ? (float) Transaction::where('status', 'completed')->sum('grand_total') : 0;
 
         // Product Stock Alert Query
         $stockQuery = ProductStock::query()

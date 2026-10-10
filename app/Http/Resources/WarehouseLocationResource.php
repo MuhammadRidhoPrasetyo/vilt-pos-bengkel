@@ -31,6 +31,7 @@ class WarehouseLocationResource extends JsonResource
             },
             'code' => $this->code,
             'name' => $this->name,
+            'full_path' => $this->full_path,
             'description' => $this->description,
             'is_active' => $this->is_active,
             'warehouse' => $this->whenLoaded('warehouse', fn () => [

@@ -21,6 +21,10 @@ const props = defineProps({
     summary: Object,
     filters: Object,
     options: Object,
+    canFilterStore: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const viewMode = ref('kanban'); // 'kanban' or 'table'
@@ -41,7 +45,7 @@ const formatDateString = (calDate) => {
 
 const search = ref(props.filters?.search || '');
 const statusFilter = ref(props.filters?.status || '');
-const storeFilter = ref(props.filters?.store_id || '');
+const storeFilter = ref(props.filters?.store_id || (props.canFilterStore ? 'all' : (props.options?.stores?.[0]?.value || '')));
 const startDate = ref(props.filters?.start_date || '');
 const endDate = ref(props.filters?.end_date || '');
 
@@ -70,10 +74,15 @@ const updatingStatus = ref(false);
 
 const mechanicsList = computed(() => props.options?.mechanics?.data || props.options?.mechanics || []);
 
-const storeOptions = computed(() => [
-    { label: 'Semua Cabang', value: 'all' },
-    ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) })),
-]);
+const storeOptions = computed(() => {
+    if (props.canFilterStore) {
+        return [
+            { label: 'Semua Cabang', value: 'all' },
+            ...(props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) })),
+        ];
+    }
+    return (props.options?.stores || []).map((s) => ({ label: s.label, value: String(s.value) }));
+});
 
 const statusOptions = [
     { label: 'Semua Status', value: 'all' },
@@ -103,7 +112,7 @@ const applyFilters = () => {
     router.get('/services', {
         search: search.value || undefined,
         status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
-        store_id: storeFilter.value !== 'all' ? storeFilter.value : undefined,
+        store_id: (props.canFilterStore ? (storeFilter.value !== 'all' ? storeFilter.value : undefined) : storeFilter.value) || undefined,
         start_date: startDate.value || undefined,
         end_date: endDate.value || undefined,
     }, { preserveState: true, replace: true });
@@ -397,6 +406,7 @@ onUnmounted(() => {
                     <USelect
                         v-model="storeFilter"
                         :items="storeOptions"
+                        :disabled="!canFilterStore"
                         class="sm:w-40"
                         :ui="{ trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
                     />

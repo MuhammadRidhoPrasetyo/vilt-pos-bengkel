@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -27,6 +28,22 @@ class User extends Authenticatable
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class)->withTrashed();
+    }
+
+    /**
+     * Get transactions processed by the user.
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Get service order items assigned to this mechanic.
+     */
+    public function serviceOrderItems(): HasMany
+    {
+        return $this->hasMany(ServiceOrderItem::class, 'mechanic_id');
     }
 
     /**

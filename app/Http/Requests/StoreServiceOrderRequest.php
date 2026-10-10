@@ -12,6 +12,18 @@ class StoreServiceOrderRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        $isOwner = $user && $user->hasRole('owner');
+
+        if (! $isOwner && $user?->store_id) {
+            $this->merge([
+                'store_id' => $user->store_id,
+            ]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

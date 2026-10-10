@@ -15,9 +15,9 @@ class StoreTransactionRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $user = $this->user();
-        $canFilterStore = $user && ($user->hasRole('owner') || $user->hasRole('super-admin') || $user->store_id === null);
+        $isOwner = $user && $user->hasRole('owner');
 
-        if (! $canFilterStore && $user?->store_id) {
+        if (! $isOwner && $user?->store_id) {
             $this->merge([
                 'store_id' => $user->store_id,
             ]);

@@ -86,4 +86,28 @@ class Product extends Model implements HasMedia
             get: fn () => ! empty($this->receipt_name) ? $this->receipt_name : $this->name,
         );
     }
+
+    /**
+     * Get unique hierarchical warehouse location paths for this product (across variants and stocks).
+     *
+     * @return array<int, string>
+     */
+    public function getWarehouseLocationsAttribute(): array
+    {
+        if (! $this->relationLoaded('variants')) {
+            $this->loadMissing('variants.stocks.warehouseLocation');
+        }
+
+        return $this->variants
+            ->flatMap(function ($variant) {
+                return $variant->relationLoaded('stocks')
+                    ? $variant->stocks
+                    : $variant->stocks()->with('warehouseLocation')->get();
+            })
+            ->map(fn ($stock) => $stock->warehouseLocation?->full_path)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
 }

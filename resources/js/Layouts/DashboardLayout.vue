@@ -123,11 +123,12 @@ const userItems = computed(() => [
         {
             label: 'Profil',
             icon: 'i-lucide-user',
+            onSelect: () => navigateTo('/profile'),
         },
-        {
-            label: 'Pengaturan',
-            icon: 'i-lucide-settings',
-        },
+        // {
+        //     label: 'Pengaturan',
+        //     icon: 'i-lucide-settings',
+        // },
     ],
     [
         {
@@ -400,7 +401,26 @@ const links = computed(() => {
         });
     }
 
-    // 8. Pengaturan & System
+    // 8. Laporan & Analitik
+    const reportChildren = [];
+    if (can('reports.staff.view')) {
+        reportChildren.push({
+            label: 'Kinerja Karyawan',
+            onSelect: () => navigateTo('/reports/staff-performance'),
+        });
+    }
+    if (reportChildren.length > 0) {
+        navItems.push({
+            label: 'Laporan',
+            icon: 'i-lucide-bar-chart-3',
+            active: currentPath.value.startsWith('/reports'),
+            defaultOpen: currentPath.value.startsWith('/reports'),
+            type: 'trigger',
+            children: reportChildren,
+        });
+    }
+
+    // 9. Pengaturan & System
     const settingChildren = [];
     if (can('stores.view')) {
         settingChildren.push({
@@ -657,13 +677,13 @@ const formatTimeAgo = (date) => {
                                 </UButton>
                             </UTooltip>
 
-                            <UTooltip text="Notifikasi" :shortcuts="['N']">
+                            <!-- <UTooltip text="Notifikasi" :shortcuts="['N']">
                                 <UButton color="neutral" variant="ghost" square @click="notificationsOpen = true">
                                     <UChip color="error" inset>
                                         <UIcon name="i-lucide-bell" class="size-5 shrink-0" />
                                     </UChip>
                                 </UButton>
-                            </UTooltip>
+                            </UTooltip> -->
 
                             <UButton
                                 v-if="navbarAction"

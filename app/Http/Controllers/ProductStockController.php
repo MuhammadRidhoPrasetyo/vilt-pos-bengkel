@@ -36,7 +36,7 @@ class ProductStockController extends Controller
                 'productVariant',
                 'productVariant.product:id,name',
                 'warehouse:id,name',
-                'warehouseLocation:id,name,full_path,warehouse_id',
+                'warehouseLocation:id,name,parent_id,warehouse_id',
             ]);
 
         if ($search) {

@@ -31,6 +31,10 @@ class TransactionController extends Controller
 
     public function index(Request $request): Response
     {
+        $user = $request->user();
+        $isOwner = (bool) $user?->hasRole('owner');
+        $canFilterStore = $isOwner;
+
         $search = $request->string('search')->toString();
         $type = $request->string('type')->toString();
         if ($type === 'all') {
@@ -44,18 +48,36 @@ class TransactionController extends Controller
         if ($storeId === 'all') {
             $storeId = '';
         }
+        if (! $canFilterStore) {
+            $storeId = $user?->store_id ?? '';
+        }
         $startDate = $request->string('start_date')->toString();
         $endDate = $request->string('end_date')->toString();
 
         $transactions = $this->repository->paginate($search, $type, $paymentStatus, $storeId, $startDate, $endDate);
 
+        $canViewSummary = $user?->can('transactions.summary.view') ?? false;
+        $canViewProfit = $user?->can('transactions.profit.view') ?? false;
+
+        $baseQuery = Transaction::query()->when($storeId, fn ($q) => $q->where('store_id', $storeId));
         $summary = [
-            'total_count' => Transaction::count(),
-            'total_grand_total' => (float) Transaction::where('status', 'completed')->sum('grand_total'),
-            'total_profit' => (float) Transaction::where('status', 'completed')->sum('total_profit'),
-            'retail_count' => Transaction::where('type', 'retail')->count(),
-            'service_count' => Transaction::where('type', 'service')->count(),
+            'total_count' => (clone $baseQuery)->count(),
+            'paid_count' => (clone $baseQuery)->where('payment_status', 'paid')->count(),
+            'total_grand_total' => $canViewSummary ? (float) (clone $baseQuery)->where('status', 'completed')->sum('grand_total') : null,
+            'total_profit' => $canViewProfit ? (float) (clone $baseQuery)->where('status', 'completed')->sum('total_profit') : null,
+            'total_unpaid' => $canViewSummary ? (float) (clone $baseQuery)->where('payment_status', 'unpaid')->sum('grand_total') : null,
+            'retail_count' => (clone $baseQuery)->where('type', 'retail')->count(),
+            'service_count' => (clone $baseQuery)->where('type', 'service')->count(),
         ];
+
+        if ($canFilterStore) {
+            $storeOptions = $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]);
+        } else {
+            $userStore = $user?->store;
+            $storeOptions = $userStore
+                ? collect([['label' => $userStore->name, 'value' => $userStore->id]])
+                : collect();
+        }
 
         return Inertia::render('transactions/index', [
             'transactions' => TransactionResource::collection($transactions),
@@ -68,8 +90,9 @@ class TransactionController extends Controller
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
+            'canFilterStore' => $canFilterStore,
             'options' => [
-                'stores' => $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
+                'stores' => $storeOptions,
             ],
         ]);
     }
@@ -77,12 +100,19 @@ class TransactionController extends Controller
     public function create(Request $request): Response
     {
         $user = $request->user();
-        $canFilterStore = $user && ($user->hasRole('owner') || $user->hasRole('super-admin') || $user->store_id === null);
+        $isOwner = (bool) $user?->hasRole('owner');
+        $canFilterStore = $isOwner;
 
-        $storeOptions = $this->stores->options();
-        $storeId = ! $canFilterStore
-            ? $user?->store_id
-            : ($request->string('store_id')->toString() ?: ($user?->store_id ?: $storeOptions->first()?->id));
+        if ($canFilterStore) {
+            $storeOptions = $this->stores->options()->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]);
+            $storeId = $request->string('store_id')->toString() ?: ($user?->store_id ?: $this->stores->options()->first()?->id);
+        } else {
+            $userStore = $user?->store;
+            $storeOptions = $userStore
+                ? collect([['label' => $userStore->name, 'value' => $userStore->id]])
+                : collect();
+            $storeId = $user?->store_id;
+        }
 
         $payments = Payment::query()
             ->orderBy('name')
@@ -119,7 +149,7 @@ class TransactionController extends Controller
             'activeStoreId' => $storeId,
             'isStoreLocked' => ! $canFilterStore,
             'options' => [
-                'stores' => $storeOptions->map(fn ($s) => ['label' => $s->name, 'value' => $s->id]),
+                'stores' => $storeOptions,
                 'payments' => $payments,
                 'customers' => $customers,
                 'discountTypes' => $discountTypes,

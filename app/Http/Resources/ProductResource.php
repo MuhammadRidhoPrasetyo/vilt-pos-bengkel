@@ -51,6 +51,7 @@ class ProductResource extends JsonResource
                     'value' => $option->value,
                 ])->values() : [],
             ])->values()),
+            'warehouse_locations' => $this->warehouse_locations,
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }
