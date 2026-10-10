@@ -17,8 +17,11 @@
         "fortify-development",
         "laravel-best-practices",
         "testing-best-practices",
+        "octane-development",
         "inertia-vue-development",
         "tailwindcss-development",
+        "echo-vue-development",
+        "echo-development",
         "medialibrary-development",
         "laravel-permission-development"
     ]

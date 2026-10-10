@@ -22,9 +22,8 @@ if %errorlevel% neq 0 (
 )
 echo [OK] PHP aktif.
 
-:: Memastikan konfigurasi php.ini aman dan portabel untuk upload database di laptop mana pun
-php -r "$i=php_ini_loaded_file();if($i&&is_writable($i)){$c=file_get_contents($i);$u=false;if(!preg_match('/upload_tmp_dir\s*=\s*\"\$\{TEMP\}\"/i',$c)){if(preg_match('/;?upload_tmp_dir\s*=.*/i',$c)){$c=preg_replace('/;?upload_tmp_dir\s*=.*/i','upload_tmp_dir = \"${TEMP}\"',$c);$u=true;}}if(!preg_match('/upload_max_filesize\s*=\s*(128|256|512)M/i',$c)){if(preg_match('/upload_max_filesize\s*=.*/i',$c)){$c=preg_replace('/upload_max_filesize\s*=.*/i','upload_max_filesize = 128M',$c);$u=true;}}if(!preg_match('/post_max_size\s*=\s*(128|256|512)M/i',$c)){if(preg_match('/post_max_size\s*=.*/i',$c)){$c=preg_replace('/post_max_size\s*=.*/i','post_max_size = 128M',$c);$u=true;}}if($u)file_put_contents($i,$c);}" >nul 2>&1
 if not exist "storage\app\backups" mkdir "storage\app\backups" >nul 2>&1
+if not exist "storage\app\temp" mkdir "storage\app\temp" >nul 2>&1
 
 :: 2. Memeriksa Cloudflared
 echo [2/5] Memeriksa Cloudflare Tunnel (cloudflared)...
@@ -166,10 +165,11 @@ echo       LINK 2: http://vilt-pos-bengkel.test
 echo.
 echo ================================================================
 echo.
-echo [*] Menjalankan dev server (Server, Reverb, Queue, Vite)...
+echo [*] Menjalankan server (Server, Reverb, Queue)...
 echo [*] Tekan Ctrl+C untuk menghentikan server ini kapan saja.
 echo.
 
+if exist "public\hot" del /f /q "public\hot" >nul 2>&1
 call php artisan dev
 
 :: Cleanup saat server berhenti

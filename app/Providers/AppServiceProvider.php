@@ -23,7 +23,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::before(function ($user, $ability) {
+            if ($ability === 'viewLogViewer') {
+                return $user->hasRole('owner') ? true : false;
+            }
+
             return ($user->hasRole('owner') || $user->hasRole('super-admin')) ? true : null;
+        });
+
+        Gate::define('viewLogViewer', function ($user) {
+            return $user->hasRole('owner');
         });
 
         if ($this->app->runningInConsole()) {
@@ -50,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
 
             if (PHP_OS_FAMILY === 'Windows' && class_exists(DevCommands::class)) {
                 DevCommands::artisan('serve', 'server');
+                DevCommands::except('vite');
             }
         }
     }
